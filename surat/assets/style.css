@@ -1,0 +1,4429 @@
+/* ==========================================================================
+   1. Reset & Global Styles
+   ========================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:root {
+  --blue: #1657c9;
+  --blue-dark: #0a3a8a;
+  --blue-light: #eaf1ff;
+  --indigo: #4338ca;
+  --gold: #f5a623;
+  --red: #dc2626;
+  --green: #16a34a;
+  --bg: #f3f5fb;
+  --surface: #ffffff;
+  --text: #1e2536;
+  --muted: #667085;
+  --line: #e6e9f2;
+  --white: #fff;
+  --font-display: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --shadow: 0 10px 28px rgba(20, 30, 65, 0.07);
+  --shadow-md: 0 14px 34px rgba(20, 30, 65, 0.10);
+  --shadow-lg: 0 26px 60px rgba(15, 23, 42, 0.16);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(1100px 520px at 100% -10%, rgba(22, 87, 201, 0.06), transparent 60%),
+    radial-gradient(900px 480px at -5% 10%, rgba(67, 56, 202, 0.05), transparent 55%);
+  background-attachment: fixed;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  color: #3b4256;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1.5px solid #e1e5f0;
+  border-radius: var(--radius-sm);
+  padding: 12px 13px;
+  background: #fbfcfe;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease), background 0.18s var(--ease);
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: #c9d2e6;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--blue);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(22, 87, 201, 0.12);
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.hidden {
+  display: none !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+/* ==========================================================================
+   2. Login Page
+   ========================================================================== */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(120% 140% at 15% 0%, #2a6fe0 0%, var(--blue) 42%, var(--blue-dark) 75%, #062658 100%);
+}
+
+.login-page::before,
+.login-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.login-page::before {
+  width: 620px;
+  height: 620px;
+  top: -220px;
+  right: -180px;
+}
+
+.login-page::after {
+  width: 420px;
+  height: 420px;
+  bottom: -180px;
+  left: -140px;
+  background: rgba(244, 180, 0, 0.10);
+}
+
+.login-card {
+  width: min(430px, 100%);
+  background: #fff;
+  padding: 40px 38px;
+  border-radius: var(--radius-xl);
+  text-align: left;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.brand-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.login-logo {
+  width: 86px;
+  height: 86px;
+  max-width: 86px;
+  max-height: 86px;
+  object-fit: contain;
+}
+
+.logo-fallback {
+  width: 92px;
+  height: 92px;
+  border-radius: 22px;
+  background: linear-gradient(150deg, var(--blue), var(--blue-dark));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 48px;
+  box-shadow: 0 12px 26px rgba(22, 87, 201, 0.28);
+}
+
+.logo-fallback.small {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  font-size: 26px;
+  flex: 0 0 auto;
+}
+
+.login-card h1 {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--blue-dark);
+  margin-bottom: 4px;
+  letter-spacing: 0.1px;
+}
+
+.login-card p {
+  text-align: center;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.login-card label {
+  margin-top: 14px;
+}
+
+.btn-login {
+  width: 100%;
+  margin-top: 22px;
+  padding: 14px;
+  background: linear-gradient(135deg, #ffc043, var(--gold));
+  border: none;
+  color: #6b3f00;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  box-shadow: 0 10px 22px rgba(244, 180, 0, 0.32);
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), filter 0.18s var(--ease);
+}
+
+.btn-login:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 14px 28px rgba(244, 180, 0, 0.38);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+.error-message {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 12px;
+  text-align: center;
+  min-height: 18px;
+  font-weight: 600;
+}
+
+.demo-box {
+  margin-top: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  color: #475569;
+  font-size: 12.5px;
+  display: grid;
+  gap: 5px;
+}
+
+.demo-box strong {
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   3. App Shell & Sidebar
+   ========================================================================== */
+.app-shell {
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 282px;
+  height: 100vh;
+  background: linear-gradient(190deg, #1e63d6 0%, var(--blue) 38%, var(--blue-dark) 80%, #062658 100%);
+  color: #fff;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 20;
+  transition: transform 0.28s var(--ease);
+  box-shadow: 6px 0 30px rgba(10, 30, 80, 0.18);
+}
+
+/* Tombol untuk menyembunyikan / menampilkan sidebar — hanya ikon garis tiga, menyatu dengan area biru, tanpa kotak pembungkus */
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 35px;
+  left: 255px;
+  transform: translateY(-50%);
+  z-index: 90;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: left 0.28s ease, opacity 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  opacity: 0.8;
+}
+
+/* Saat sidebar disembunyikan, tombol berpindah ke atas area putih konten, jadi warnanya perlu gelap agar tetap terlihat */
+body.sidebar-hidden .sidebar-toggle-btn {
+  color: var(--blue-dark, #0f172a);
+}
+
+/* Ikon garis tiga (hamburger) digambar murni dengan CSS, bukan karakter emoji, agar presisi dan rapi */
+.sidebar-toggle-icon {
+  position: relative;
+  display: block;
+  width: 15px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  font-size: 0;
+}
+
+.sidebar-toggle-icon::before,
+.sidebar-toggle-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 15px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.sidebar-toggle-icon::before {
+  top: -5px;
+}
+
+.sidebar-toggle-icon::after {
+  top: 5px;
+}
+
+/* Saat sidebar disembunyikan (desktop): geser keluar layar dan tombol menempel ke kiri */
+body.sidebar-hidden .sidebar {
+  transform: translateX(-100%);
+}
+
+body.sidebar-hidden .sidebar-toggle-btn {
+  left: 18px;
+}
+
+body.sidebar-hidden .content {
+  margin-left: 0;
+}
+
+.content {
+  transition: margin-left 0.28s ease;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-logo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.2px;
+}
+
+.sidebar p {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 4px;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.menu-item,
+.logout-btn {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px 13px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  position: relative;
+}
+
+.menu-item {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.menu-item.active {
+  background: #fff;
+  color: var(--blue-dark);
+  box-shadow: 0 10px 22px rgba(4, 15, 40, 0.28);
+}
+
+.menu-item.active::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--gold);
+}
+
+.menu-item span {
+  width: 22px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.logout-btn {
+  justify-content: center;
+  background: rgba(220, 38, 38, 0.9);
+  color: #fff;
+  text-align: center;
+}
+
+.logout-btn:hover {
+  background: var(--red);
+  box-shadow: 0 10px 20px rgba(220, 38, 38, 0.3);
+}
+
+.user-panel {
+  margin-top: auto;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  backdrop-filter: blur(6px);
+}
+
+.user-panel strong {
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.user-panel span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: capitalize;
+}
+
+/* ==========================================================================
+   4. Content & Topbar
+   ========================================================================== */
+.content {
+  margin-left: 282px;
+  padding: 26px;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--surface);
+  padding: 22px 26px;
+  border-radius: var(--radius-xl);
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(20, 30, 65, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.topbar h1 {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 800;
+  color: var(--blue-dark);
+  letter-spacing: 0.1px;
+}
+
+.topbar p {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin-top: 5px;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   5. Buttons & Badges
+   ========================================================================== */
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 11px 18px;
+  background: linear-gradient(135deg, #1a63dd, var(--blue));
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.1px;
+  box-shadow: 0 8px 18px rgba(21, 89, 183, 0.22);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.16s var(--ease), box-shadow 0.16s var(--ease), filter 0.16s var(--ease);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 12px 24px rgba(21, 89, 183, 0.28);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn.secondary {
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  box-shadow: none;
+}
+
+.btn.secondary:hover {
+  background: #e0ebff;
+  box-shadow: 0 6px 14px rgba(21, 89, 183, 0.12);
+}
+
+.btn.gold {
+  background: linear-gradient(135deg, #ffc043, var(--gold));
+  color: #6b3f00;
+}
+
+.btn.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  box-shadow: none;
+}
+
+.btn.danger:hover {
+  background: #fee2e2;
+  box-shadow: 0 6px 14px rgba(220, 38, 38, 0.14);
+}
+
+.btn.green {
+  background: linear-gradient(135deg, #1eae52, var(--green));
+  color: #fff;
+}
+
+.btn.small {
+  padding: 7px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.toast {
+  margin: 0 0 18px;
+  background: #ecfdf3;
+  color: #14532d;
+  border: 1px solid #bbf7d0;
+  padding: 13px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.08);
+  animation: toastSlideIn 0.25s var(--ease);
+}
+
+.toast.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.08);
+}
+
+.toast.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+  box-shadow: 0 8px 20px rgba(245, 166, 35, 0.08);
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   5b. Notifikasi Tengah (Success Overlay + Centang Animasi)
+   ========================================================================== */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(9, 20, 45, 0.42);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s var(--ease);
+}
+
+.success-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.success-overlay-card {
+  background: #fff;
+  border-radius: var(--radius-xl);
+  padding: 34px 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 240px;
+  max-width: min(360px, 90vw);
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.82) translateY(14px);
+  transition: transform 0.32s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.success-overlay.show .success-overlay-card {
+  transform: scale(1) translateY(0);
+}
+
+.success-check-circle {
+  width: 78px;
+  height: 78px;
+  display: block;
+}
+
+.success-check-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.success-check-circle-bg {
+  stroke: var(--green);
+  stroke-width: 3;
+  stroke-dasharray: 145;
+  stroke-dashoffset: 145;
+  transition: stroke-dashoffset 0.5s var(--ease) 0.05s;
+}
+
+.success-overlay.show .success-check-circle-bg {
+  stroke-dashoffset: 0;
+}
+
+.success-check-mark {
+  stroke: var(--green);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 34;
+  stroke-dashoffset: 34;
+  transition: stroke-dashoffset 0.32s var(--ease) 0.42s;
+}
+
+.success-overlay.show .success-check-mark {
+  stroke-dashoffset: 0;
+}
+
+.success-overlay-message {
+  font-weight: 700;
+  font-size: 15.5px;
+  color: #14532d;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   6. Layout Components (Stats, Panels, Grids)
+   ========================================================================== */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.card,
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(20, 30, 65, 0.05);
+  transition: box-shadow 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.card {
+  padding: 22px;
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-card-clickable {
+  cursor: pointer;
+}
+
+.stat-card-clickable:focus-visible {
+  outline: 3px solid rgba(22, 87, 201, 0.45);
+  outline-offset: 2px;
+}
+
+.stat-card span {
+  display: block;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.stat-card strong {
+  display: block;
+  font-family: var(--font-display);
+  color: var(--blue-dark);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 10px 0;
+}
+
+.stat-card small {
+  color: var(--muted);
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.panel {
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.panel-header h2 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.panel-header p {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.45;
+}
+
+.quick-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.quick-menu button {
+  border: 1px solid var(--line);
+  background: #f9fbff;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: left;
+  transition: border-color 0.18s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease), background 0.18s var(--ease);
+}
+
+.quick-menu button:hover {
+  border-color: rgba(22, 87, 201, 0.35);
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.quick-menu strong {
+  display: block;
+  color: var(--blue-dark);
+  font-size: 15px;
+}
+
+.quick-menu span {
+  display: block;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.workflow {
+  padding-left: 20px;
+  color: #374151;
+  line-height: 1.7;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.form-panel {
+  margin-bottom: 18px;
+}
+
+.form-panel input, 
+.form-panel select, 
+.form-panel textarea {
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* ==========================================================================
+   7. Concept Cards & Toolbars
+   ========================================================================== */
+.concept-card {
+  position: sticky;
+  top: 24px;
+}
+
+.concept-card h2 {
+  color: var(--blue-dark);
+  margin-bottom: 8px;
+}
+
+.concept-card > p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.concept-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.concept-list div {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px;
+  background: #fafafa;
+}
+
+.concept-list span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.concept-list p {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 0.7fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.toolbar .btn {
+  height: 44px;
+}
+
+.table-search {
+  max-width: 360px;
+}
+
+/* ==========================================================================
+   8. Data Tables & Status Badges
+   ========================================================================== */
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  min-width: 980px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 11px;
+  vertical-align: top;
+}
+
+.data-table th {
+  background: #f7f9fd;
+  color: #475069;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.data-table tr {
+  transition: background 0.15s var(--ease);
+}
+
+.data-table tr:hover td {
+  background: #f6f9ff;
+}
+
+.badge,
+.status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.badge {
+  background: #eef4ff;
+  color: var(--blue-dark);
+}
+
+.status {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.status.selesai,
+.status.diarsipkan,
+.status.disetujui {
+  background: #e8f5e9;
+  color: #166534;
+}
+
+.status.draft {
+  background: #fff8e1;
+  color: #92400e;
+}
+
+.status.diterima,
+.status.diproses,
+.status.diajukan {
+  background: #eef4ff;
+  color: #1d4ed8;
+}
+
+.actions {
+  white-space: nowrap;
+  min-width: 360px;
+}
+
+.actions button {
+  border: none;
+  background: #eef4ff;
+  color: var(--blue-dark);
+  border-radius: 9px;
+  padding: 7px 9px;
+  margin: 2px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.actions button.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.actions button.green {
+  background: #e8f5e9;
+  color: #166534;
+}
+
+/* ==========================================================================
+   9. Miscellaneous & Utilities
+   ========================================================================== */
+.empty-state {
+  text-align: center;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 22px;
+  padding: 45px 20px;
+  color: var(--muted);
+}
+
+.empty-state h2,
+.empty-state h3 {
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.empty-state.small {
+  padding: 28px 16px;
+}
+
+.alert {
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid #fde68a;
+  background: #fff8e1;
+  color: #92400e;
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.danger-zone {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.danger-zone h2 {
+  color: #991b1b;
+}
+
+/* ==========================================================================
+   10. Reports
+   ========================================================================== */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.report-list {
+  display: grid;
+  gap: 10px;
+}
+
+.report-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.report-row strong {
+  color: #111827;
+}
+
+.report-row span {
+  color: var(--blue-dark);
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   11. Modals & Previews
+   ========================================================================== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 18, 40, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: modalFadeIn 0.18s var(--ease);
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-card {
+  width: min(980px, 100%);
+  max-height: 94vh;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPopIn 0.22s var(--ease);
+}
+
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-wide {
+  width: min(1120px, 100%);
+}
+
+.modal-form {
+  width: min(900px, 100%);
+}
+
+.modal-header,
+.modal-footer {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--line);
+  border-bottom: none;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-scroll {
+  overflow: auto;
+  padding: 20px;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: #f3f4f6;
+  font-size: 28px;
+  color: #374151;
+  line-height: 1;
+}
+
+.preview-content {
+  overflow: auto;
+  background: #e5e7eb;
+  padding: 22px;
+}
+
+/* ==========================================================================
+   12. PDF Template / Document Styles (KUNCI UTAMA 1 HALAMAN)
+   ========================================================================== */
+.pdf-page {
+  width: 210mm;
+  height: 297mm !important;      /* Kunci mati tinggi kertas A4 standar */
+  max-height: 297mm !important;
+  background: #fff;
+  margin: 0 auto;
+  padding: 14mm 20mm 10mm !important; /* Optimasi padding agar space bawah lapang */
+  color: #111;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.35;             /* Merapatkan baris agar muat 1 halaman */
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden !important;   /* Potong elemen liar penyebab jebol halaman 2 */
+}
+
+/* Jarak antar halaman saat tampil di layar (preview), misal Surat Tugas + halaman Lampiran. */
+.pdf-page + .pdf-page {
+  margin-top: 24px;
+}
+
+/* === Halaman Lampiran daftar nama (khusus Surat Tugas) === */
+.pdf-page.lampiran-page {
+  display: block;
+}
+
+.lampiran-page .lampiran-title {
+  font-weight: 700;
+  margin: 0 0 14px 0;
+  font-size: 11pt;
+}
+
+.lampiran-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lampiran-table th,
+.lampiran-table td {
+  border: 1px solid #111;
+  padding: 6px 10px;
+  vertical-align: top;
+  font-size: 11pt;
+  text-align: left;
+}
+
+.lampiran-table th {
+  font-weight: 700;
+  text-align: center;
+  background: #f3f4f6;
+}
+
+/* Halaman lampiran foto/gambar (upload, khusus Surat Tugas) */
+.lampiran-foto-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.lampiran-foto-img {
+  max-width: 100%;
+  max-height: 620px;
+  object-fit: contain;
+  border: 1px solid #111;
+}
+
+/* Container Utama Kop Surat */
+.letterhead {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-top: 0px;
+}
+
+/* Mengatur Ukuran Logo Tetap Stabil */
+.letterhead img,
+.letterhead-logo {
+  width: 85px !important;
+  height: 85px !important;
+  min-width: 85px !important;
+  min-height: 85px !important;
+  max-width: 85px !important;
+  max-height: 85px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: block !important;
+  flex: 0 0 85px !important;
+}
+
+/* Mengatur Teks Nama Instansi (H1) */
+.letterhead h1 {
+  font-size: 12.5pt !important;
+  text-transform: uppercase;
+  font-weight: bold;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  max-width: 520px;
+  text-align: center;
+}
+
+/* Mengatur Teks Alamat & Kontak (P) */
+.letterhead p {
+  font-size: 8.5pt !important;
+  font-style: italic;
+  font-weight: normal;
+  line-height: 1.3;
+  margin: 1px 0;
+  white-space: nowrap;
+  text-align: center;
+  color: #333;
+}
+
+/* Garis Pembatas Kop Surat */
+.letter-line {
+  border-bottom: 3.5px solid #000;
+  margin-top: 10px;
+  margin-bottom: 12px;           /* Dikurangi dari 20px agar hemat space */
+}
+
+.template-title {
+  text-align: center;
+  text-decoration: underline;
+  font-size: 13pt;               /* Disesuaikan */
+  margin: 10px 0 2px;
+}
+
+.small-title {
+  font-size: 11.5pt;
+}
+
+.center-text {
+  text-align: center;
+}
+
+.letter-meta-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+  margin: 8px 0 16px;            /* Dipersempit agar isi surat naik */
+}
+
+.date-right {
+  text-align: right;
+}
+
+.meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 10px;
+}
+
+.meta-table td {
+  padding: 2px 5px;              /* Merapatkan isi tabel details */
+  vertical-align: top;
+}
+
+.meta-table td:nth-child(1) {
+  width: 145px;
+  white-space: nowrap;
+}
+
+.meta-table td:nth-child(2) {
+  width: 12px;
+  text-align: center;
+}
+
+.meta-table td:nth-child(3) {
+  width: auto;
+}
+
+.recipient {
+  margin: 12px 0;
+}
+
+.recipient p {
+  margin: 2px 0;
+}
+
+.body-text {
+  text-align: justify;
+  margin-top: 12px;
+}
+
+.body-text p {
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+
+.body-text p.salutation {
+  margin-bottom: 11px;
+}
+
+.body-text p.opening-paragraph {
+  margin-bottom: 6px;
+}
+
+.body-box,
+.disposition-box {
+  border: 1px solid #111;
+  padding: 10px;
+  margin-top: 12px;
+}
+
+.body-box h3,
+.disposition-box h3 {
+  font-size: 11pt;
+  margin-bottom: 6px;
+}
+
+.blank-lines {
+  height: 100px;
+  border-top: 1px dashed #aaa;
+  margin-top: 6px;
+}
+
+/* Blok Area Tanda Tangan */
+.signature-block {
+  width: 260px;
+  margin-left: auto;
+  margin-top: 20px;              /* Dikurangi dari 35px agar tidak melorot ke lembar 2 */
+  text-align: center;
+  page-break-inside: avoid;
+}
+
+.signature-block p {
+  margin: 1px 0;
+}
+
+.signature-space {
+  height: 50px;                  /* Ruang pas untuk TTD (menghemat 32px dari bawaan) */
+}
+
+.stamp-space {
+  height: 15px;
+}
+
+.print-body {
+  background: #fff;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  margin: 10mm auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.print-body .pdf-page {
+  box-shadow: none;
+  margin: 0;
+}
+
+.meta-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.meta-row .label {
+  width: 110px;
+  font-weight: 600;
+}
+
+.meta-row .colon {
+  width: 12px;
+  text-align: center;
+}
+
+.kop-instansi {
+  white-space: pre-line;
+  text-align: center;
+  font-family: "Times New Roman", serif;
+  font-weight: bold;
+  font-size: 9pt; 
+  line-height: 1.0;
+  text-transform: uppercase;
+}
+
+/* ============================================================================
+   13. Tampilan Web Lebih Rapi & Responsive Mobile
+   ============================================================================ */
+body {
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+}
+
+.document-form-panel {
+  width: 100%;
+}
+
+.concept-card,
+.concept-list {
+  display: none !important;
+}
+
+.panel,
+.card,
+.topbar,
+.login-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.panel:hover,
+.card:hover {
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10);
+}
+
+@media screen and (max-width: 1180px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .section-grid,
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .concept-card {
+    position: static;
+  }
+
+  .toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar .btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  html,
+  body {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    padding: 14px 12px;
+    gap: 12px;
+    border-radius: 0;
+    z-index: 150;
+    transition: max-height 0.28s ease, padding 0.28s ease, opacity 0.2s ease;
+    max-height: 600px;
+    overflow: hidden;
+  }
+
+  .sidebar-toggle-btn {
+    top: 37px;
+    left: auto;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    z-index: 200;
+  }
+
+  .sidebar-toggle-icon,
+  .sidebar-toggle-icon::before,
+  .sidebar-toggle-icon::after {
+    width: 18px;
+  }
+
+  .sidebar-toggle-icon::before {
+    top: -5px;
+  }
+
+  .sidebar-toggle-icon::after {
+    top: 5px;
+  }
+
+  body.sidebar-hidden .sidebar {
+    transform: none;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  body.sidebar-hidden .sidebar-toggle-btn {
+    left: auto;
+    right: 12px;
+  }
+
+  body.sidebar-hidden .content {
+    margin-left: 0;
+  }
+
+  .sidebar-brand {
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .sidebar-logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .sidebar h2 {
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  .sidebar p {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .menu-list {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 0 6px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .menu-list::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .menu-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+  }
+
+  .menu-item {
+    flex: 0 0 auto;
+    min-width: max-content;
+    border-radius: 999px;
+    padding: 9px 12px;
+    font-size: 13px;
+    scroll-snap-align: start;
+  }
+
+  .menu-item span {
+    width: auto;
+  }
+
+  .user-panel {
+    display: none;
+  }
+
+  .logout-btn {
+    justify-content: center;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .content {
+    margin-left: 0;
+    padding: 14px 12px 22px;
+    padding-top: calc(var(--mobile-sidebar-h, 96px) + 14px);
+    transition: padding-top 0.28s ease;
+  }
+
+  body.sidebar-hidden .content {
+    padding-top: 14px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 18px;
+    margin-bottom: 14px;
+  }
+
+  .topbar h1 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .topbar p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .datetime-widget {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .datetime-widget small {
+    text-align: center;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .topbar-actions .btn {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .card,
+  .panel {
+    padding: 16px;
+    border-radius: 18px;
+    margin-bottom: 14px;
+  }
+
+  .stat-card span,
+  .stat-card small {
+    font-size: 12px;
+  }
+
+  .stat-card strong {
+    font-size: 28px;
+  }
+
+  .section-grid,
+  .two-column {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .quick-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-menu button {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .panel-header h2 {
+    font-size: 18px;
+  }
+
+  .panel-header p {
+    font-size: 13px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .field.full {
+    grid-column: auto;
+  }
+
+  label {
+    font-size: 12.5px;
+  }
+
+  input,
+  textarea,
+  select {
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-size: 14px;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+    gap: 8px;
+  }
+
+  .form-actions .btn,
+  .form-actions button {
+    width: 100%;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .toolbar .btn {
+    width: 100%;
+    height: 42px;
+  }
+
+  .table-wrap {
+    border-radius: 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 760px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .actions {
+    min-width: 250px;
+    white-space: normal;
+  }
+
+  .actions button {
+    padding: 7px 8px;
+    margin: 2px 1px;
+  }
+
+  .modal {
+    padding: 0;
+    place-items: stretch;
+  }
+
+  .modal-card {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 12px 14px;
+  }
+
+  .modal-footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .modal-scroll {
+    padding: 14px;
+  }
+
+  .preview-content {
+    padding: 10px;
+    overflow: auto;
+  }
+
+  .login-page {
+    padding: 16px;
+    align-items: center;
+  }
+
+  .login-card {
+    padding: 26px 22px;
+    border-radius: 20px;
+  }
+
+  .login-logo {
+    width: 76px;
+    height: 76px;
+  }
+}
+
+@media screen and (max-width: 520px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-brand {
+    align-items: center;
+  }
+
+  .sidebar h2 {
+    font-size: 16px;
+  }
+
+  .btn,
+  .btn-login,
+  .logout-btn {
+    min-height: 42px;
+  }
+
+  .modal-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-content {
+    padding: 8px;
+  }
+}
+
+/* ==========================================================================
+   14. SATU-SATUNYA MEDIA PRINT YANG AKTIF (Anti-Jebol 2 Lembar & Anti-Potong)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .preview-content,
+  #previewContent {
+    display: block !important;
+    visibility: visible !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .modal {
+    position: static !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+
+  .modal-card {
+    box-shadow: none !important;
+    max-height: none !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  /* Konstruksi mutlak halaman A4 cetak */
+  .pdf-page {
+    width: 210mm !important;
+    height: 297mm !important;   /* Menjaga tinggi 1 halaman mutlak */
+    max-height: 297mm !important;
+    padding: 15mm 20mm 10mm !important; /* Dorongan pas atas-bawah agar kop utuh */
+    box-sizing: border-box !important;
+    overflow: hidden !important; /* Melarang luapan halaman ke lembar 2 */
+    background: #ffffff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Mengunci kestabilan elemen gambar (Logo KKG) */
+  .letterhead img,
+  .letterhead-logo {
+    width: 85px !important;
+    height: 85px !important;
+    min-width: 85px !important;
+    min-height: 85px !important;
+    max-width: 85px !important;
+    max-height: 85px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    display: block !important;
+    flex: 0 0 85px !important;
+  }
+
+  /* Menjamin background pembentuk PDF tidak menjadi transparan/putih samar saat dicapture */
+.pdf-page {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+  .body-text,
+  .meta-table,
+  .recipient {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Hilangkan total komponen interface tombol/sidebar saat di-print */
+  .sidebar,
+  .topbar,
+  .modal-header,
+  .modal-footer,
+  .toast,
+  .btn,
+  button {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   FIX FINAL KOP SURAT: Logo proporsional tanpa menggeser teks instansi
+   ========================================================================== */
+.pdf-page .letterhead {
+  position: relative !important;
+  width: 100% !important;
+  min-height: 95px !important;
+  display: block !important;
+  padding-top: 0 !important;
+  gap: 0 !important;
+}
+
+.pdf-page .letterhead img,
+.pdf-page .letterhead-logo {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 85px !important;
+  max-height: 95px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: block !important;
+  flex: none !important;
+}
+
+.pdf-page .letterhead > div {
+  width: 100% !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-page .letterhead h1 {
+  margin: 0 auto 6px !important;
+  text-align: center !important;
+}
+
+.pdf-page .letterhead p {
+  text-align: center !important;
+}
+
+@media print {
+  .pdf-page .letterhead {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 95px !important;
+    display: block !important;
+    padding-top: 0 !important;
+    gap: 0 !important;
+  }
+
+  .pdf-page .letterhead img,
+  .pdf-page .letterhead-logo {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 85px !important;
+    max-height: 95px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    display: block !important;
+    flex: none !important;
+  }
+
+  .pdf-page .letterhead > div {
+    width: 100% !important;
+    text-align: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .pdf-page .letterhead h1 {
+    margin: 0 auto 6px !important;
+    text-align: center !important;
+  }
+
+  .pdf-page .letterhead p {
+    text-align: center !important;
+  }
+}
+
+
+/* ==========================================================================
+   FIX HD LOGO PDF: menjaga logo tetap tajam saat preview dan download PDF
+   ========================================================================== */
+.pdf-page .letterhead img,
+.pdf-page .letterhead-logo {
+  image-rendering: auto !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+@media print {
+  .pdf-page .letterhead img,
+  .pdf-page .letterhead-logo {
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+}
+
+/* ==========================================================================
+   FITUR UPLOAD: surat asli dan tanda tangan
+   ========================================================================== */
+.upload-card {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.upload-card input[type="file"] {
+  background: #ffffff;
+  border-style: dashed;
+  padding: 10px;
+}
+
+.upload-card small {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.upload-card .file-current {
+  color: #0d3f8f;
+  font-weight: 700;
+}
+
+.upload-card a,
+.action-link {
+  color: #0d3f8f;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  padding: 7px 9px;
+  margin: 2px;
+  font-size: 12px;
+  background: #e8f5e9;
+  color: #166534;
+}
+
+.signature-image-wrap {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
+}
+
+.signature-image-wrap img {
+  max-width: 160px;
+  max-height: 50px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+@media screen and (max-width: 768px) {
+  .upload-card {
+    padding: 12px;
+  }
+
+  .upload-card input[type="file"] {
+    font-size: 13px;
+  }
+}
+
+@media print {
+  .signature-image-wrap {
+    height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .signature-image-wrap img {
+    max-width: 160px !important;
+    max-height: 50px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
+
+
+/* === SIGNATURE PROFESSIONAL UPGRADE === */
+.signature-area{
+  width:100%;
+  margin-top:40px;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.signature-right{
+  width:280px;
+  text-align:center;
+  font-size:11pt;
+}
+
+.ttd-box{
+  height:90px;
+  margin:10px 0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.ttd-img{
+  max-height:85px;
+  max-width:180px;
+  object-fit:contain;
+}
+
+.ttd-placeholder{
+  width:160px;
+  height:60px;
+  border-bottom:1px solid #000;
+}
+
+/* === FINAL TTD REVIEW + PDF DEPAN === */
+.pdf-page {
+  position: relative !important;
+}
+
+.signature-block {
+  width: 280px !important;
+  margin-left: auto !important;
+  margin-top: 34px !important;
+  text-align: center !important;
+  font-family: "Times New Roman", serif !important;
+  font-size: 11pt !important;
+  line-height: 1.25 !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  position: relative !important;
+  z-index: 50 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.signature-block p {
+  margin: 1px 0 !important;
+  position: relative !important;
+  z-index: 55 !important;
+}
+
+.signature-image-wrap {
+  height: 82px !important;
+  min-height: 82px !important;
+  margin: 4px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  z-index: 80 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.signature-image-wrap img,
+.ttd-img {
+  display: block !important;
+  max-width: 190px !important;
+  max-height: 78px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  position: relative !important;
+  z-index: 99 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.signature-space {
+  height: 78px !important;
+  min-height: 78px !important;
+}
+
+.signature-name {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  position: relative !important;
+  z-index: 85 !important;
+}
+
+.signature-nip {
+  margin-top: 0 !important;
+  position: relative !important;
+  z-index: 85 !important;
+}
+
+.tembusan-block {
+  margin-top: 60px !important;
+  text-align: left !important;
+  font-size: 11pt !important;
+  line-height: 1.35 !important;
+}
+
+.preview-content .signature-image-wrap,
+.preview-content .signature-image-wrap img,
+.preview-content .ttd-img {
+  z-index: 999 !important;
+  position: relative !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+
+/* === PROFILE TTD FINAL === */
+.ttd-profile-preview {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ttd-profile-preview img {
+  max-width: 190px;
+  max-height: 75px;
+  object-fit: contain;
+  display: block;
+  background: transparent;
+  border: 1px dashed rgba(15, 23, 42, .18);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.signature-block {
+  width: 280px !important;
+  margin-left: auto !important;
+  margin-top: 34px !important;
+  text-align: center !important;
+  font-family: "Times New Roman", serif !important;
+  font-size: 11pt !important;
+  line-height: 1.25 !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  position: relative !important;
+  z-index: 50 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.signature-image-wrap {
+  height: 82px !important;
+  min-height: 82px !important;
+  margin: 4px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  z-index: 80 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.signature-image-wrap img,
+.ttd-img {
+  display: block !important;
+  max-width: 190px !important;
+  max-height: 78px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  position: relative !important;
+  z-index: 99 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.signature-space {
+  height: 78px !important;
+  min-height: 78px !important;
+}
+
+.signature-name {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.signature-nip {
+  margin-top: 0 !important;
+}
+
+.tembusan-block {
+  margin-top: 60px !important;
+  text-align: left !important;
+  font-size: 11pt !important;
+  line-height: 1.35 !important;
+}
+
+
+/* === FINAL: PREVIEW MODAL DI DEPAN EDIT MODAL === */
+#previewModal {
+  z-index: 12000 !important;
+}
+
+#previewModal .modal-card {
+  z-index: 12001 !important;
+}
+
+#editModal {
+  z-index: 9000 !important;
+}
+
+/* === FINAL: PREVIEW TTD DI FORM EDIT/CREATE === */
+.ttd-current-preview {
+  margin-top: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  background: rgba(255,255,255,.8) !important;
+  border: 1px dashed #cbd5e1 !important;
+  border-radius: 10px !important;
+  padding: 10px !important;
+}
+
+.ttd-current-preview[hidden] {
+  display: none !important;
+}
+
+.ttd-current-preview img {
+  display: block !important;
+  max-width: 190px !important;
+  max-height: 80px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  background: transparent !important;
+}
+
+
+/* === FINAL FIX: TTD TETAP TAMPIL SETELAH DATA TERSIMPAN DAN DI PDF === */
+.signature-image-wrap {
+  height: 82px !important;
+  min-height: 82px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 999 !important;
+}
+
+.signature-image-wrap img,
+.ttd-img {
+  display: block !important;
+  max-width: 190px !important;
+  max-height: 78px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 999 !important;
+  background: transparent !important;
+}
+
+.ttd-current-preview img,
+.ttd-profile-preview img {
+  display: block !important;
+  max-width: 190px !important;
+  max-height: 80px !important;
+  object-fit: contain !important;
+}
+
+/* === FINAL FIX TTD 20260624: posisi, ukuran, dan preview === */
+.signature-block {
+  width: 310px !important;
+  margin-left: auto !important;
+  margin-top: 6px !important;
+  text-align: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.signature-block p {
+  margin: 1px 0 !important;
+  line-height: 1.24 !important;
+}
+
+.signature-image-wrap {
+  height: 102px !important;
+  min-height: 102px !important;
+  margin: -2px auto -16px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 999 !important;
+}
+
+.signature-image-wrap img,
+.ttd-img {
+  display: block !important;
+  width: 235px !important;
+  max-width: 235px !important;
+  height: 100px !important;
+  max-height: 100px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  margin: 0 auto !important;
+  transform: translateY(8px) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 999 !important;
+  background: transparent !important;
+}
+
+.signature-space {
+  height: 92px !important;
+  min-height: 92px !important;
+}
+
+.signature-name {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+.signature-nip {
+  margin-top: 0 !important;
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+.ttd-current-preview img,
+.ttd-profile-preview img {
+  width: 220px !important;
+  max-width: 220px !important;
+  max-height: 95px !important;
+  object-fit: contain !important;
+}
+
+@media print {
+  .signature-block {
+    margin-top: 6px !important;
+  }
+
+  .signature-image-wrap {
+    height: 102px !important;
+    min-height: 102px !important;
+    margin: -2px auto -16px auto !important;
+  }
+
+  .signature-image-wrap img,
+  .ttd-img {
+    width: 235px !important;
+    max-width: 235px !important;
+    height: 100px !important;
+    max-height: 100px !important;
+    transform: translateY(8px) !important;
+  }
+}
+
+
+.datetime-widget {
+  min-width: 190px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(21, 89, 183, 0.10), rgba(245, 178, 32, 0.14));
+  border: 1px solid rgba(21, 89, 183, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+}
+
+.datetime-widget .datetime-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.datetime-widget strong {
+  color: var(--blue-dark);
+  font-size: 18px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.datetime-widget small {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .datetime-widget {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .datetime-widget small {
+    text-align: center;
+  }
+}
+
+
+/* FINAL: widget jam/tanggal dibuat transparan */
+.datetime-widget {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+
+/* ==========================================================================
+   LOGO TRANSPARAN + HOMESCREEN ICON SUPPORT
+   ========================================================================== */
+.brand-logo-wrap,
+.sidebar-brand,
+.login-logo,
+.sidebar-logo {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.login-logo,
+.sidebar-logo {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+}
+
+.sidebar-logo {
+  width: 58px !important;
+  height: 58px !important;
+  flex: 0 0 58px !important;
+}
+
+@media screen and (max-width: 880px) {
+  .sidebar-logo {
+    width: 46px !important;
+    height: 46px !important;
+    flex-basis: 46px !important;
+  }
+}
+
+
+/* === FIX FINAL 20260625: PERBESAR TTD / STEMPEL + NAMA/NIP NAIK === */
+.signature-block {
+  width: 360px !important;
+  margin-left: auto !important;
+  overflow: visible !important;
+}
+
+.signature-image-wrap {
+  height: 112px !important;
+  min-height: 112px !important;
+  margin: -6px auto -34px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 999 !important;
+  background: transparent !important;
+}
+
+.signature-image-wrap img,
+.ttd-img {
+  display: block !important;
+  width: 360px !important;
+  max-width: 360px !important;
+  height: 150px !important;
+  max-height: 150px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: translate(-70px, -4px) !important;
+  margin: 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 999 !important;
+  background: transparent !important;
+}
+
+.signature-name {
+  position: relative !important;
+  z-index: 1000 !important;
+  margin-top: -2px !important;
+}
+
+.signature-nip {
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+@media print {
+  .signature-block {
+    width: 360px !important;
+    overflow: visible !important;
+  }
+
+  .signature-image-wrap {
+    height: 112px !important;
+    min-height: 112px !important;
+    margin: -6px auto -34px auto !important;
+    overflow: visible !important;
+  }
+
+  .signature-image-wrap img,
+  .ttd-img {
+    width: 360px !important;
+    max-width: 360px !important;
+    height: 150px !important;
+    max-height: 150px !important;
+    transform: translate(-70px, -4px) !important;
+  }
+}
+
+
+/* === FIX IPHONE PRINT: CETAK DARI PREVIEW TANPA MEMBUKA TAB KOSONG === */
+@media print {
+  body.printing-preview {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-preview .app-shell,
+  body.printing-preview #editModal,
+  body.printing-preview #toast,
+  body.printing-preview .topbar,
+  body.printing-preview .sidebar,
+  body.printing-preview .modal-header,
+  body.printing-preview .modal-footer,
+  body.printing-preview button,
+  body.printing-preview .btn {
+    display: none !important;
+  }
+
+  body.printing-preview #previewModal,
+  body.printing-preview #previewModal.modal {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-preview #previewModal .modal-card,
+  body.printing-preview #previewModal .modal-wide {
+    display: block !important;
+    visibility: visible !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    max-height: none !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  body.printing-preview #previewContent,
+  body.printing-preview .preview-content {
+    display: block !important;
+    visibility: visible !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  body.printing-preview #previewContent .pdf-page,
+  body.printing-preview .preview-content .pdf-page {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    overflow: hidden !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Halaman Lampiran (jika ada) harus mulai di halaman cetak baru, bukan menyatu dengan halaman surat. */
+  body.printing-preview #previewContent .pdf-page.lampiran-page,
+  body.printing-preview .preview-content .pdf-page.lampiran-page {
+    display: block !important;
+    page-break-before: always !important;
+  }
+}
+
+
+/* === FIX 20260625: PDF DARI PREVIEW HARUS SAMA DENGAN REVIEW === */
+.pdf-live-capture {
+  box-shadow: none !important;
+  margin: 0 auto !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  width: 360px !important;
+  margin-left: auto !important;
+  overflow: visible !important;
+}
+
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 112px !important;
+  min-height: 112px !important;
+  margin: -6px auto -34px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 999 !important;
+  background: transparent !important;
+}
+
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  display: block !important;
+  width: 360px !important;
+  max-width: 360px !important;
+  height: 150px !important;
+  max-height: 150px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: translate(-70px, -4px) !important;
+  margin: 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 999 !important;
+  background: transparent !important;
+}
+
+
+/* === FIX FINAL 20260625: ANTI GEPENG STEMPEL DAN TANDA TANGAN === */
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  width: 360px !important;
+  max-width: 360px !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: translate(-70px, -4px) !important;
+  margin: 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.pdf-live-capture,
+.pdf-export-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  min-height: 297mm !important;
+  max-height: 297mm !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+}
+
+
+/* === FIX FINAL 20260625: PREVIEW, PDF, DAN WORD SATU RASIO === */
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  width: 360px !important;
+  max-width: 360px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: translate(-70px, -4px) !important;
+  margin: 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 112px !important;
+  min-height: 112px !important;
+  margin: -6px auto -34px auto !important;
+  overflow: visible !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pdf-live-capture,
+.pdf-export-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  min-height: 297mm !important;
+  max-height: 297mm !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+}
+
+
+/* === FIX FINAL 20260626-signature-options-1: TTD/STEMPEL PROPORSIONAL DAN WORD TIDAK TERPOTONG === */
+.signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  width: 300px !important;
+  margin-left: auto !important;
+  margin-top: 6px !important;
+  text-align: center !important;
+  overflow: visible !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 96px !important;
+  min-height: 96px !important;
+  margin: 0 auto -10px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  display: block !important;
+  width: auto !important;
+  max-width: 280px !important;
+  height: auto !important;
+  max-height: 95px !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: none !important;
+  margin: 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.signature-name {
+  position: relative !important;
+  z-index: 1000 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.signature-nip {
+  position: relative !important;
+  z-index: 1000 !important;
+  margin-top: 0 !important;
+}
+
+.ttd-current-preview img,
+.ttd-profile-preview img {
+  width: auto !important;
+  max-width: 220px !important;
+  height: auto !important;
+  max-height: 90px !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+@media print {
+  .signature-block,
+  .pdf-live-capture .signature-block,
+  .pdf-export-page .signature-block {
+    width: 300px !important;
+    margin-top: 6px !important;
+  }
+
+  .signature-image-wrap,
+  .pdf-live-capture .signature-image-wrap,
+  .pdf-export-page .signature-image-wrap {
+    height: 96px !important;
+    min-height: 96px !important;
+    margin: 0 auto -10px auto !important;
+  }
+
+  .signature-image-wrap img,
+  .ttd-img,
+  .pdf-live-capture .signature-image-wrap img,
+  .pdf-live-capture .ttd-img,
+  .pdf-export-page .signature-image-wrap img,
+  .pdf-export-page .ttd-img {
+    width: auto !important;
+    max-width: 280px !important;
+    height: auto !important;
+    max-height: 95px !important;
+    transform: none !important;
+  }
+}
+
+/* === FIX FINAL 20260626-STEMPEL-KKG: stempel seperti contoh, tanpa mengubah struktur surat === */
+.signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  width: 300px !important;
+  margin-left: auto !important;
+  margin-top: 6px !important;
+  text-align: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.signature-block p,
+.pdf-live-capture .signature-block p,
+.pdf-export-page .signature-block p {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+.signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  width: 300px !important;
+  height: 108px !important;
+  min-height: 108px !important;
+  margin: -4px auto -14px auto !important;
+  position: relative !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  position: absolute !important;
+  left: 4px !important;
+  top: -14px !important;
+  width: 145px !important;
+  height: 138px !important;
+  max-width: 145px !important;
+  max-height: 138px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  opacity: 0.88 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  transform: none !important;
+}
+
+.signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 96px !important;
+  min-height: 96px !important;
+  margin: 0 auto -10px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  z-index: 4 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  display: block !important;
+  width: auto !important;
+  max-width: 260px !important;
+  height: auto !important;
+  max-height: 94px !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: none !important;
+  margin: 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.signature-name,
+.signature-nip,
+.pdf-live-capture .signature-name,
+.pdf-live-capture .signature-nip,
+.pdf-export-page .signature-name,
+.pdf-export-page .signature-nip {
+  position: relative !important;
+  z-index: 6 !important;
+}
+
+.ttd-current-preview img,
+.ttd-profile-preview img {
+  width: auto !important;
+  max-width: 220px !important;
+  height: auto !important;
+  max-height: 90px !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+@media print {
+  .signature-visual-wrap,
+  .pdf-live-capture .signature-visual-wrap,
+  .pdf-export-page .signature-visual-wrap {
+    height: 108px !important;
+    min-height: 108px !important;
+    margin: -4px auto -14px auto !important;
+  }
+
+  .signature-stamp-img,
+  .pdf-live-capture .signature-stamp-img,
+  .pdf-export-page .signature-stamp-img {
+    left: 4px !important;
+    top: -14px !important;
+    width: 145px !important;
+    height: 138px !important;
+    max-width: 145px !important;
+    max-height: 138px !important;
+  }
+}
+
+
+/* === FIX 20260626-SIGNATURE-OPTIONS: opsi export dengan/tanpa stempel dan TTD === */
+.preview-export-footer {
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.signature-export-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-right: auto;
+}
+
+.signature-export-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.signature-export-options input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.preview-export-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .preview-export-footer {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .signature-export-options,
+  .preview-export-actions {
+    width: 100%;
+  }
+
+  .preview-export-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* === FIX 20260626-SIGNATURE-UP-PDF: tanda tangan naik 1 enter agar tembusan tidak terpotong === */
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  margin-top: 14px !important;
+}
+
+
+/* === FIX 20260626-LOGO-SAME-WORD-PDF: ukuran logo kop surat sama dengan Word === */
+.pdf-page .letterhead img,
+.pdf-page .letterhead-logo,
+.pdf-live-capture .letterhead img,
+.pdf-live-capture .letterhead-logo,
+.pdf-export-page .letterhead img,
+.pdf-export-page .letterhead-logo {
+  width: 1.95cm !important;
+  height: 2.24cm !important;
+  max-width: 1.95cm !important;
+  max-height: 2.24cm !important;
+  min-width: 1.95cm !important;
+  min-height: 2.24cm !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+
+/* ==========================================================================
+   UI FIX: Samakan bar menu dan tombol topbar mobile
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+  .menu-list {
+    align-items: stretch;
+  }
+
+  .menu-item {
+    flex: 0 0 126px;
+    width: 126px;
+    min-width: 126px;
+    max-width: 126px;
+    height: 40px;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    line-height: 1;
+    box-sizing: border-box;
+  }
+
+  .menu-item span {
+    flex: 0 0 18px;
+    width: 18px;
+    min-width: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .topbar-actions .btn {
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
+@media screen and (max-width: 520px) {
+  .topbar-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .menu-item {
+    flex-basis: 118px;
+    width: 118px;
+    min-width: 118px;
+    max-width: 118px;
+    font-size: 12.5px;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .menu-item {
+    flex-basis: 112px;
+    width: 112px;
+    min-width: 112px;
+    max-width: 112px;
+    font-size: 12px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .topbar-actions .btn {
+    font-size: 12px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+
+/* === FIX 20260626-WORD-SIGNATURE-GAP-STAMP-NOCROP === */
+.signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  margin-top: 16px !important;
+}
+.signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  height: 136px !important;
+  min-height: 136px !important;
+  margin: 0 auto -10px auto !important;
+  overflow: visible !important;
+}
+.signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  top: 0 !important;
+  width: 145px !important;
+  height: 138px !important;
+  max-width: 145px !important;
+  max-height: 138px !important;
+}
+.signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 118px !important;
+  min-height: 118px !important;
+  margin: 6px auto -10px auto !important;
+  overflow: visible !important;
+}
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  max-height: 104px !important;
+}
+
+/* === FIX 20260626-LAPTOP-TOPBAR-SIDE-BY-SIDE ===
+   Laptop/tablet landscape tetap menampilkan Muat Ulang dan Buat Surat sejajar.
+   Aturan lama hanya mengunci tampilan HP, sehingga pada lebar laptop tertentu
+   flex-wrap membuat dua tombol turun atas-bawah. */
+@media screen and (min-width: 769px) {
+  .topbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center !important;
+    column-gap: 14px !important;
+    row-gap: 10px !important;
+  }
+
+  .topbar > div:first-child {
+    min-width: 0 !important;
+  }
+
+  .topbar h1,
+  .topbar p {
+    overflow-wrap: anywhere;
+  }
+
+  .datetime-widget {
+    width: auto !important;
+    min-width: 150px !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .topbar-actions {
+    display: grid !important;
+    grid-template-columns: max-content max-content !important;
+    align-items: center !important;
+    justify-content: end !important;
+    gap: 10px !important;
+    width: auto !important;
+    min-width: max-content !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .topbar-actions .btn {
+    width: auto !important;
+    min-width: 126px !important;
+    max-width: none !important;
+    min-height: 46px !important;
+    padding: 11px 16px !important;
+    white-space: nowrap !important;
+  }
+
+  .menu-list .menu-item {
+    min-height: 44px !important;
+    height: 44px !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .menu-list .menu-item span {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    min-width: 24px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1040px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .datetime-widget {
+    grid-column: 1 / 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .topbar-actions {
+    grid-column: 2 / 3;
+    grid-row: 2;
+    justify-self: end;
+  }
+}
+
+
+/* === FIX 20260626-INVITATION-GAP-ONE-ENTER ===
+   Jeda 1 enter pada undangan: setelah di Tempat dan setelah tabel Acara. */
+.doc-one-enter-gap {
+  height: 1.35em !important;
+  min-height: 1.35em !important;
+  line-height: 1.35em !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  clear: both !important;
+}
+
+.pdf-live-capture .doc-one-enter-gap,
+.pdf-export-page .doc-one-enter-gap {
+  height: 1.35em !important;
+  min-height: 1.35em !important;
+  line-height: 1.35em !important;
+}
+
+
+/* === FIX 20260626-INVITATION-GAP2-ONE-ENTER ===
+   Jeda 1 enter setelah kalimat hadir pada sebelum tabel Hari/Tanggal/Waktu/Tempat/Acara. */
+
+
+/* === FIX 20260626-SIGNATURE-COMPACT-UP: area tanda tangan lebih naik dan rapat === */
+.signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  margin-top: 8px !important;
+}
+.signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  height: 120px !important;
+  min-height: 120px !important;
+  margin: 0 auto -20px auto !important;
+  overflow: visible !important;
+}
+.signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  left: 6px !important;
+  top: -2px !important;
+  width: 138px !important;
+  height: 130px !important;
+  max-width: 138px !important;
+  max-height: 130px !important;
+}
+.signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 104px !important;
+  min-height: 104px !important;
+  margin: 0 auto -12px auto !important;
+  overflow: visible !important;
+}
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  max-height: 96px !important;
+}
+.signature-name,
+.signature-nip,
+.pdf-live-capture .signature-name,
+.pdf-live-capture .signature-nip,
+.pdf-export-page .signature-name,
+.pdf-export-page .signature-nip {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.12 !important;
+}
+.tembusan-block,
+.pdf-live-capture .tembusan-block,
+.pdf-export-page .tembusan-block {
+  margin-top: 18px !important;
+}
+
+
+/* === FIX 20260626-SIGNATURE-DATE-STABLE: tanggal tetap turun, isi tanda tangan tetap rapat === */
+.signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  margin-top: 18px !important;
+}
+.signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  height: 112px !important;
+  min-height: 112px !important;
+  margin: 0 auto -22px auto !important;
+  overflow: visible !important;
+}
+.signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  left: 6px !important;
+  top: -2px !important;
+  width: 138px !important;
+  height: 130px !important;
+  max-width: 138px !important;
+  max-height: 130px !important;
+}
+.signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  height: 98px !important;
+  min-height: 98px !important;
+  margin: 0 auto -14px auto !important;
+  overflow: visible !important;
+}
+.signature-image-wrap img,
+.ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  max-height: 92px !important;
+}
+.signature-name,
+.signature-nip,
+.pdf-live-capture .signature-name,
+.pdf-live-capture .signature-nip,
+.pdf-export-page .signature-name,
+.pdf-export-page .signature-nip {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.10 !important;
+}
+.tembusan-block,
+.pdf-live-capture .tembusan-block,
+.pdf-export-page .tembusan-block {
+  margin-top: 16px !important;
+}
+
+
+/* === FIX 20260626-TOPBAR-STABLE-LAPTOP-MOBILE ===
+   Header halaman dibuat stabil agar tidak tertarik, tidak berubah tinggi,
+   dan tombol Muat Ulang + Buat Surat tetap sejajar di laptop maupun mobile. */
+.topbar,
+.topbar-stable {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+.topbar-title-block {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.datetime-widget strong,
+.datetime-widget small,
+.topbar-actions .btn {
+  font-variant-numeric: tabular-nums !important;
+}
+
+@media screen and (min-width: 769px) {
+  .content > .topbar,
+  .content > .topbar-stable {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 1fr) 166px 328px !important;
+    grid-template-rows: 1fr !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    column-gap: 12px !important;
+    row-gap: 0 !important;
+    min-height: 98px !important;
+    height: 98px !important;
+    padding: 20px 24px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .content > .topbar .topbar-title-block,
+  .content > .topbar-stable .topbar-title-block,
+  .content > .topbar > div:first-child {
+    grid-column: 1 / 2 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    justify-self: stretch !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .content > .topbar h1,
+  .content > .topbar-stable h1 {
+    display: block !important;
+    margin: 0 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .content > .topbar p,
+  .content > .topbar-stable p {
+    display: block !important;
+    margin: 6px 0 0 0 !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .content > .topbar .datetime-widget,
+  .content > .topbar-stable .datetime-widget {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    width: 166px !important;
+    min-width: 166px !important;
+    max-width: 166px !important;
+    min-height: 54px !important;
+    height: 54px !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .content > .topbar .datetime-widget strong,
+  .content > .topbar-stable .datetime-widget strong {
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+
+  .content > .topbar .datetime-widget small,
+  .content > .topbar-stable .datetime-widget small {
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+  }
+
+  .content > .topbar .topbar-actions,
+  .content > .topbar-stable .topbar-actions {
+    grid-column: 3 / 4 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    justify-self: end !important;
+    width: 328px !important;
+    min-width: 328px !important;
+    max-width: 328px !important;
+    height: 58px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    align-items: center !important;
+    justify-content: end !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+    box-sizing: border-box !important;
+  }
+
+  .content > .topbar .topbar-actions .btn,
+  .content > .topbar-stable .topbar-actions .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 0 14px !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1120px) {
+  .content > .topbar,
+  .content > .topbar-stable {
+    grid-template-columns: minmax(230px, 1fr) 150px 300px !important;
+    column-gap: 10px !important;
+    height: 98px !important;
+    min-height: 98px !important;
+  }
+
+  .content > .topbar .datetime-widget,
+  .content > .topbar-stable .datetime-widget {
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
+  }
+
+  .content > .topbar .topbar-actions,
+  .content > .topbar-stable .topbar-actions {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .content > .topbar,
+  .content > .topbar-stable {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto !important;
+    align-items: start !important;
+    justify-content: stretch !important;
+    gap: 10px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 16px !important;
+    overflow: visible !important;
+  }
+
+  .content > .topbar .topbar-title-block,
+  .content > .topbar-stable .topbar-title-block,
+  .content > .topbar > div:first-child {
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-self: start !important;
+  }
+
+  .content > .topbar h1,
+  .content > .topbar-stable h1 {
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    word-break: normal !important;
+  }
+
+  .content > .topbar p,
+  .content > .topbar-stable p {
+    margin: 5px 0 0 0 !important;
+    line-height: 1.35 !important;
+  }
+
+  .content > .topbar .datetime-widget,
+  .content > .topbar-stable .datetime-widget {
+    grid-row: 2 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 54px !important;
+    padding: 8px 10px !important;
+    align-self: stretch !important;
+    justify-self: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .content > .topbar .topbar-actions,
+  .content > .topbar-stable .topbar-actions {
+    grid-row: 3 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    box-sizing: border-box !important;
+  }
+
+  .content > .topbar .topbar-actions .btn,
+  .content > .topbar-stable .topbar-actions .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .content > .topbar,
+  .content > .topbar-stable {
+    padding: 14px !important;
+    gap: 9px !important;
+  }
+
+  .content > .topbar .topbar-actions .btn,
+  .content > .topbar-stable .topbar-actions .btn {
+    font-size: 12px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
+
+/* === FIX 20260627-REVIEW-PDF-WORD-ONE-PAGE ===
+   Merapikan kolom teks samping pada Review/PDF dan menjaga surat tetap muat 1 halaman. */
+.pdf-page,
+.pdf-live-capture,
+.pdf-export-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  min-height: 297mm !important;
+  max-height: 297mm !important;
+  padding: 13mm 18mm 8mm 18mm !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  font-family: "Times New Roman", serif !important;
+  font-size: 11pt !important;
+  line-height: 1.24 !important;
+}
+
+.pdf-page .letterhead,
+.pdf-live-capture .letterhead,
+.pdf-export-page .letterhead {
+  gap: 16px !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.pdf-page .letter-line,
+.pdf-live-capture .letter-line,
+.pdf-export-page .letter-line {
+  margin-top: 7px !important;
+  margin-bottom: 8px !important;
+}
+
+.pdf-page .letter-meta-grid,
+.pdf-live-capture .letter-meta-grid,
+.pdf-export-page .letter-meta-grid {
+  display: block !important;
+  grid-template-columns: none !important;
+  margin: 2px 0 4px 0 !important;
+  padding: 0 !important;
+}
+
+.pdf-page .meta-table,
+.pdf-live-capture .meta-table,
+.pdf-export-page .meta-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+}
+
+.pdf-page .letter-meta-grid .meta-table,
+.pdf-live-capture .letter-meta-grid .meta-table,
+.pdf-export-page .letter-meta-grid .meta-table {
+  width: 12.7cm !important;
+  max-width: 12.7cm !important;
+}
+
+.pdf-page .meta-table td,
+.pdf-live-capture .meta-table td,
+.pdf-export-page .meta-table td {
+  padding: 0 2px 1px 0 !important;
+  vertical-align: top !important;
+  font-size: 11pt !important;
+  line-height: 1.14 !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.pdf-page .meta-table td:nth-child(1),
+.pdf-live-capture .meta-table td:nth-child(1),
+.pdf-export-page .meta-table td:nth-child(1) {
+  width: 3.45cm !important;
+  min-width: 3.45cm !important;
+  max-width: 3.45cm !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+}
+
+.pdf-page .letter-meta-grid .meta-table td:nth-child(1),
+.pdf-live-capture .letter-meta-grid .meta-table td:nth-child(1),
+.pdf-export-page .letter-meta-grid .meta-table td:nth-child(1) {
+  width: 2.35cm !important;
+  min-width: 2.35cm !important;
+  max-width: 2.35cm !important;
+}
+
+.pdf-page .meta-table td:nth-child(2),
+.pdf-live-capture .meta-table td:nth-child(2),
+.pdf-export-page .meta-table td:nth-child(2) {
+  width: .35cm !important;
+  min-width: .35cm !important;
+  max-width: .35cm !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.pdf-page .meta-table td:nth-child(3),
+.pdf-live-capture .meta-table td:nth-child(3),
+.pdf-export-page .meta-table td:nth-child(3) {
+  width: auto !important;
+  text-align: left !important;
+  padding-left: 2px !important;
+}
+
+.pdf-page .recipient,
+.pdf-live-capture .recipient,
+.pdf-export-page .recipient {
+  margin: 4px 0 5px 0 !important;
+}
+
+.pdf-page .recipient p,
+.pdf-live-capture .recipient p,
+.pdf-export-page .recipient p {
+  margin: 0 0 2px 0 !important;
+  line-height: 1.16 !important;
+}
+
+.pdf-page .body-text,
+.pdf-live-capture .body-text,
+.pdf-export-page .body-text {
+  margin-top: 6px !important;
+  text-align: justify !important;
+}
+
+.pdf-page .body-text p,
+.pdf-page .body-box p,
+.pdf-page .disposition-box p,
+.pdf-live-capture .body-text p,
+.pdf-live-capture .body-box p,
+.pdf-live-capture .disposition-box p,
+.pdf-export-page .body-text p,
+.pdf-export-page .body-box p,
+.pdf-export-page .disposition-box p {
+  margin: 0 0 4px 0 !important;
+  line-height: 1.18 !important;
+  text-align: justify !important;
+}
+
+.pdf-page .body-text p.salutation,
+.pdf-live-capture .body-text p.salutation,
+.pdf-export-page .body-text p.salutation {
+  margin-bottom: 8pt !important;
+  line-height: 1.18 !important;
+}
+
+.pdf-page .body-text p.opening-paragraph,
+.pdf-live-capture .body-text p.opening-paragraph,
+.pdf-export-page .body-text p.opening-paragraph {
+  margin-bottom: 4px !important;
+}
+
+.pdf-page .doc-one-enter-gap,
+.pdf-live-capture .doc-one-enter-gap,
+.pdf-export-page .doc-one-enter-gap {
+  height: 8pt !important;
+  min-height: 8pt !important;
+  line-height: 8pt !important;
+}
+
+.pdf-page .signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  width: 295px !important;
+  margin: 7px 0 0 auto !important;
+  padding: 0 !important;
+  text-align: center !important;
+  line-height: 1.08 !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  overflow: visible !important;
+}
+
+.pdf-page .signature-block p,
+.pdf-live-capture .signature-block p,
+.pdf-export-page .signature-block p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.08 !important;
+  text-align: center !important;
+}
+
+.pdf-page .signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  display: block !important;
+  position: relative !important;
+  width: 295px !important;
+  height: 88px !important;
+  min-height: 88px !important;
+  margin: 0 auto -8px auto !important;
+  overflow: visible !important;
+}
+
+.pdf-page .signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  position: absolute !important;
+  left: 18px !important;
+  top: -3px !important;
+  width: 118px !important;
+  height: auto !important;
+  max-width: 118px !important;
+  max-height: 104px !important;
+  object-fit: contain !important;
+  opacity: .90 !important;
+  z-index: 22 !important;
+}
+
+.pdf-page .signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 220px !important;
+  height: 78px !important;
+  min-height: 78px !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  left: 18px !important;
+  top: 0 !important;
+  overflow: visible !important;
+}
+
+.pdf-page .signature-image-wrap img,
+.pdf-page .ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  display: block !important;
+  width: auto !important;
+  max-width: 210px !important;
+  height: auto !important;
+  max-height: 74px !important;
+  object-fit: contain !important;
+  transform: none !important;
+  margin: 0 auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.pdf-page .signature-name,
+.pdf-page .signature-nip,
+.pdf-live-capture .signature-name,
+.pdf-live-capture .signature-nip,
+.pdf-export-page .signature-name,
+.pdf-export-page .signature-nip {
+  white-space: nowrap !important;
+  line-height: 1.08 !important;
+  margin: 0 !important;
+}
+
+.pdf-page .tembusan-block,
+.pdf-live-capture .tembusan-block,
+.pdf-export-page .tembusan-block {
+  margin-top: 8px !important;
+  line-height: 1.15 !important;
+  font-size: 11pt !important;
+  text-align: left !important;
+}
+
+@media print {
+  .pdf-page,
+  .pdf-live-capture,
+  .pdf-export-page {
+    padding: 13mm 18mm 8mm 18mm !important;
+  }
+}
+
+/* === FIX 20260627-RECIPIENT-DATE-DOWN-STAMP-SMALL ===
+   Kepada Yth. dan tanggal tanda tangan turun 2 enter. Stempel diperkecil agar Word tetap 1 lembar. */
+.pdf-page .recipient,
+.pdf-live-capture .recipient,
+.pdf-export-page .recipient {
+  margin-top: 20pt !important;
+  margin-bottom: 5px !important;
+}
+
+.pdf-page .signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  margin-top: 20pt !important;
+}
+
+.pdf-page .signature-date,
+.pdf-live-capture .signature-date,
+.pdf-export-page .signature-date {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.pdf-page .signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  width: 104px !important;
+  max-width: 104px !important;
+  max-height: 98px !important;
+  left: 22px !important;
+  top: 1px !important;
+}
+
+.pdf-page .signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  height: 82px !important;
+  min-height: 82px !important;
+  margin-bottom: -7px !important;
+}
+
+/* === FIX 20260627-SIGNATURE-OVERLAP-NAME-CLEAR ===
+   TTD ditempelkan ke stempel. Nama/NIP diberi jarak aman dari stempel. */
+.pdf-page .signature-block,
+.pdf-live-capture .signature-block,
+.pdf-export-page .signature-block {
+  width: 295px !important;
+  margin: 20pt 0 0 auto !important;
+  padding: 0 !important;
+  text-align: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  line-height: 1.06 !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.pdf-page .signature-block p,
+.pdf-live-capture .signature-block p,
+.pdf-export-page .signature-block p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.06 !important;
+  text-align: center !important;
+}
+
+.pdf-page .signature-visual-wrap,
+.pdf-live-capture .signature-visual-wrap,
+.pdf-export-page .signature-visual-wrap {
+  display: block !important;
+  position: relative !important;
+  width: 295px !important;
+  height: 92px !important;
+  min-height: 92px !important;
+  margin: 0 auto 3px auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  z-index: 20 !important;
+}
+
+.pdf-page .signature-stamp-img,
+.pdf-live-capture .signature-stamp-img,
+.pdf-export-page .signature-stamp-img {
+  position: absolute !important;
+  left: 34px !important;
+  top: 7px !important;
+  width: 96px !important;
+  height: auto !important;
+  max-width: 96px !important;
+  max-height: 90px !important;
+  object-fit: contain !important;
+  opacity: .90 !important;
+  transform: none !important;
+  z-index: 22 !important;
+}
+
+.pdf-page .signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 220px !important;
+  height: 78px !important;
+  min-height: 78px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  position: relative !important;
+  left: -18px !important;
+  top: 2px !important;
+  overflow: visible !important;
+  background: transparent !important;
+  z-index: 24 !important;
+}
+
+.pdf-page .signature-image-wrap img,
+.pdf-page .ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  display: block !important;
+  width: auto !important;
+  max-width: 218px !important;
+  height: auto !important;
+  max-height: 74px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  margin: 0 auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.pdf-page .signature-name,
+.pdf-page .signature-nip,
+.pdf-live-capture .signature-name,
+.pdf-live-capture .signature-nip,
+.pdf-export-page .signature-name,
+.pdf-export-page .signature-nip {
+  white-space: nowrap !important;
+  line-height: 1.08 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+  z-index: 30 !important;
+}
+
+
+
+/* === FIX 20260627N-PDF-TTD-LEFT-TRANSPARENT === */
+.pdf-page .signature-image-wrap,
+.pdf-live-capture .signature-image-wrap,
+.pdf-export-page .signature-image-wrap {
+  left: -18px !important;
+  background: transparent !important;
+}
+.pdf-page .signature-image-wrap img,
+.pdf-page .ttd-img,
+.pdf-live-capture .signature-image-wrap img,
+.pdf-live-capture .ttd-img,
+.pdf-export-page .signature-image-wrap img,
+.pdf-export-page .ttd-img {
+  background: transparent !important;
+  mix-blend-mode: normal !important;
+}
