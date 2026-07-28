@@ -1,0 +1,54 @@
+name: Generate halaman statis kegiatan
+
+# Kenapa workflow ini ada:
+# Data kegiatan/berita disimpan di Supabase dan bisa berubah kapan saja lewat
+# admin.html — tapi GitHub Pages cuma bisa nyajiin file statis. Supaya link
+# yang dibagikan ke WhatsApp/Facebook/Telegram selalu nampilin foto kegiatan
+# yang benar (bukan logo), halaman /kegiatan/<id-judul>/index.html harus
+# dibuat ulang tiap ada perubahan data. Workflow ini yang ngerjain itu secara
+# otomatis: jalan tiap 15 menit, dan bisa juga dipicu manual kapan saja.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'js/galeri-data.js'
+      - 'js/supabase-config.js'
+      - 'scripts/generate-kegiatan-pages.mjs'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-kegiatan
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Buat halaman kegiatan
+        run: node scripts/generate-kegiatan-pages.mjs
+
+      - name: Commit & push kalau ada perubahan
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add kegiatan/
+          if git diff --cached --quiet; then
+            echo "Tidak ada kegiatan baru/berubah."
+          else
+            git commit -m "chore: perbarui halaman statis kegiatan [auto]"
+            git push
+          fi

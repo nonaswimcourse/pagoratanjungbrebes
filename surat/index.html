@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIAP TANJUNG</title>
+  <meta name="description" content="Sistem Informasi Administrasi Pagora Tanjung untuk pengelolaan surat dan arsip.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <meta name="msapplication-TileImage" content="./icon-192.png?v=20260718-modern-ui-2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SIAP TANJUNG">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.json?v=20260718-modern-ui-2">
+  <link rel="icon" href="./favicon.ico?v=20260718-modern-ui-2" sizes="any">
+  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png?v=20260718-modern-ui-2">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=20260718-modern-ui-2">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260718-modern-ui-2">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=20260718-modern-ui-2">
+  <link rel="stylesheet" href="assets/style.css?v=20260718-modern-ui-2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="loginPage" class="login-page">
+    <div class="login-card">
+      <div class="brand-logo-wrap">
+        <img src="logo.png" class="login-logo" alt="Logo" onerror="this.style.display='none';document.getElementById('loginLogoFallback').style.display='grid'">
+        <div id="loginLogoFallback" class="logo-fallback" style="display:none">S</div>
+      </div>
+  <h1 style="font-size:15px; line-height:1.2;">
+    <span style="white-space:nowrap;">
+        SISTEM INFORMASI ADMINISTRASI
+    </span>
+    <br>
+    PAGORA TANJUNG
+</h1>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Masukkan email" autocomplete="email">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Masukkan password" autocomplete="current-password">
+
+      <button onclick="doLogin()" class="btn-login">Masuk</button>
+      <div id="loginError" class="error-message"></div>
+
+    </div>
+  </div>
+
+  <button id="sidebarToggleBtn" class="sidebar-toggle-btn" style="display:none;" onclick="toggleSidebar()" title="Sembunyikan/Tampilkan menu" aria-label="Sembunyikan atau tampilkan menu" aria-expanded="true">
+    <span class="sidebar-toggle-icon"></span>
+  </button>
+
+  <div id="app" class="app-shell" style="display:none;">
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-brand">
+        <img src="logo.png" class="sidebar-logo" alt="Logo" onerror="this.style.display='none';document.getElementById('sidebarLogoFallback').style.display='grid'">
+        <div id="sidebarLogoFallback" class="logo-fallback small" style="display:none">S</div>
+        <div>
+          <h2 id="sidebarAppName">SIAP TANJUNG</h2>
+          <p id="sidebarProfileName">Sistem Informasi Administrasi Pagora Tanjung</p>
+        </div>
+      </div>
+
+      <nav class="menu-list" aria-label="Menu utama">
+        <button class="menu-item active" data-route="dashboard" onclick="navigate('dashboard')"><span>▦</span>Dashboard</button>
+        <button class="menu-item" data-route="masuk" onclick="navigate('masuk')"><span>↙</span>Surat Masuk</button>
+        <button class="menu-item" data-route="keluar" onclick="navigate('keluar')"><span>↗</span>Surat Keluar</button>
+        <button class="menu-item" data-route="tugas" onclick="navigate('tugas')"><span>✓</span>Surat Tugas</button>
+        <button class="menu-item" data-route="undangan" onclick="navigate('undangan')"><span>✉</span>Undangan</button>
+        <button class="menu-item" data-route="sk" onclick="navigate('sk')"><span>§</span>SK</button>
+        <button class="menu-item" data-route="arsip" onclick="navigate('arsip')"><span>▣</span>Arsip</button>
+        <button class="menu-item" data-route="pengaturan" onclick="navigate('pengaturan')"><span>⚙</span>Pengaturan</button>
+      </nav>
+
+      <div class="user-panel">
+        <strong id="currentUserEmail">-</strong>
+        <span id="currentUserRole">-</span>
+      </div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </aside>
+
+    <main class="content">
+      <div class="topbar topbar-stable">
+        <div class="topbar-title-block">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Sistem Informasi Administrasi Pagora Tanjung.</p>
+        </div>
+        <div class="datetime-widget" aria-live="polite" title="Waktu dan tanggal sekarang">
+          <strong id="currentClock">--:--:-- WIB</strong>
+          <small id="currentDate">--</small>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn secondary" onclick="refreshCurrentPage()">Muat Ulang</button>
+          <button class="btn" onclick="navigate('keluar')">Buat Surat</button>
+        </div>
+      </div>
+
+      <section id="toast" class="toast" hidden></section>
+      <section id="pageContent"></section>
+    </main>
+  </div>
+
+  <div id="previewModal" class="modal" hidden>
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <h2>Preview Dokumen</h2>
+        <button class="icon-btn" onclick="closePreview()">×</button>
+      </div>
+      <div id="previewContent" class="preview-content"></div>
+      <div class="modal-footer preview-export-footer">
+        <div class="signature-export-options" aria-label="Pilihan tampilan tanda tangan">
+          <label><input type="checkbox" id="previewUseStamp" checked onchange="refreshPreviewSignatureOptions()"> Pakai Stempel</label>
+          <label><input type="checkbox" id="previewUseTtd" checked onchange="refreshPreviewSignatureOptions()"> Pakai TTD</label>
+        </div>
+        <div class="preview-export-actions">
+          <button class="btn secondary" onclick="printPreview()">Cetak</button>
+          <button class="btn" onclick="downloadPreviewPdf()">Download PDF</button>
+          <button class="btn secondary" onclick="downloadPreviewWord()">Download Word</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editModal" class="modal" hidden>
+    <div class="modal-card modal-form">
+      <div class="modal-header">
+        <h2 id="editModalTitle">Edit Dokumen</h2>
+        <button class="icon-btn" onclick="closeEditModal()">×</button>
+      </div>
+      <div id="editModalContent" class="modal-scroll"></div>
+    </div>
+  </div>
+
+  <div id="successOverlay" class="success-overlay" hidden aria-live="assertive" role="status">
+    <div class="success-overlay-card">
+      <span class="success-check-circle">
+        <svg class="success-check-svg" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+          <circle class="success-check-circle-bg" cx="26" cy="26" r="23" fill="none"/>
+          <path class="success-check-mark" fill="none" d="M14.5 27.5l7 7 16-16"/>
+        </svg>
+      </span>
+      <p id="successOverlayMessage" class="success-overlay-message">Berhasil</p>
+    </div>
+  </div>
+
+  <script src="assets/app.js?v=20260718-modern-ui-2"></script>
+  <script>
+    if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((error) => {
+          console.warn('Service worker belum aktif:', error);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
