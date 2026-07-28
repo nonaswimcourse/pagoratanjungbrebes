@@ -171,7 +171,11 @@ function renderPage(item, others) {
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<<<<<<< HEAD
 <link rel="stylesheet" href="/css/style.css?v=20260728c">
+=======
+<link rel="stylesheet" href="/css/style.css?v=20260729a">
+>>>>>>> e362890 (new link)
 </head>
 <body>
 <div id="pageLoader" class="page-loader">
@@ -242,12 +246,21 @@ function renderPage(item, others) {
         <span class="share-label">Bagikan kegiatan ini</span>
         <div class="share-actions">
           <button type="button" class="share-btn js-copy-link" data-url="${escapeHtml(canonical)}">
+<<<<<<< HEAD
             <svg class="ic-default"><use href="#ic-link"/></svg>
             <svg class="ic-copied"><use href="#ic-check"/></svg>
             <span class="share-btn-text">Salin Link</span>
           </button>
           <a class="share-btn share-btn-wa" href="${escapeHtml(waShareUrl)}" target="_blank" rel="noopener">
             <svg><use href="#ic-wa"/></svg>
+=======
+            <svg class="ic-default" width="16" height="16" viewBox="0 0 24 24"><use href="#ic-link"/></svg>
+            <svg class="ic-copied" width="16" height="16" viewBox="0 0 24 24"><use href="#ic-check"/></svg>
+            <span class="share-btn-text">Salin Link</span>
+          </button>
+          <a class="share-btn share-btn-wa" href="${escapeHtml(waShareUrl)}" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 32 32"><use href="#ic-wa"/></svg>
+>>>>>>> e362890 (new link)
             <span>Bagikan WhatsApp</span>
           </a>
         </div>

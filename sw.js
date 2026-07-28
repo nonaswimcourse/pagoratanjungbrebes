@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 const CACHE_NAME = 'pagora-tanjung-v5';
+=======
+const CACHE_NAME = 'pagora-tanjung-v6';
+>>>>>>> e362890 (new link)
 const APP_SHELL = [
   '/index.html',
   '/profil/',
