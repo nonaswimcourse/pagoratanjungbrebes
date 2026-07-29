@@ -1359,6 +1359,11 @@ function normalizeDocument(row) {
     perihal: row.perihal || '',
     sifat_surat: row.sifat_surat || 'Biasa',
     lampiran: row.lampiran || '-',
+    // Snapshot Tembusan per surat.
+    // null = surat lama yang belum punya snapshot sendiri (masih ikut Pengaturan sebagai fallback).
+    // string ('' atau isi) = surat ini sudah punya salinan tembusan sendiri dan tidak lagi berubah
+    // walau format/isi Tembusan di Pengaturan diedit setelahnya.
+    tembusan: row.tembusan === undefined ? null : row.tembusan,
     // Data lampiran daftar nama (halaman terpisah khusus Surat Tugas), disimpan sebagai JSON string
     // supaya cukup 1 kolom tambahan saja di tabel Supabase.
     lampiran_data: row.lampiran_data || '',
@@ -1605,6 +1610,12 @@ function getFormData(form, typeKey, existing = {}) {
     nomor_surat: data.get('nomor_surat')?.trim(),
     nomor_agenda: data.get('nomor_agenda')?.trim(),
     tanggal_surat: data.get('tanggal_surat') || todayInput(),
+    // Kunci snapshot Tembusan pada saat surat pertama kali disimpan.
+    // Jika surat ini sudah punya snapshot sendiri (bukan null), pertahankan apa adanya
+    // agar tidak ikut berubah saat Tembusan di Pengaturan diedit kemudian.
+    tembusan: (existing.tembusan === undefined || existing.tembusan === null)
+      ? ((cachedProfile || getLocalProfile() || {}).tembusan || '')
+      : existing.tembusan,
     pengirim: data.get('pengirim')?.trim(),
     penerima: data.get('penerima')?.trim(),
     alamat_tujuan: data.get('alamat_tujuan')?.trim(),
@@ -3089,12 +3100,19 @@ function signature(profile, row = {}, options = {}) {
       }
     </div>
 
-    ${tembusanListHtml(profile.tembusan) ? `
-      <div class="tembusan-block">
-        <div class="tembusan-title"><strong>Tembusan:</strong></div>
-        <div class="tembusan-list">${tembusanListHtml(profile.tembusan)}</div>
-      </div>
-    ` : ''}
+    ${(() => {
+      // Surat yang sudah punya snapshot sendiri (tembusan bukan null) memakai snapshot itu,
+      // tidak ikut berubah walau Tembusan di Pengaturan diedit setelahnya.
+      // Surat lama yang belum pernah punya snapshot (masih null) sementara mengikuti Pengaturan
+      // sampai surat itu disimpan/diedit ulang.
+      const tembusanValue = (row?.tembusan === undefined || row?.tembusan === null) ? (profile?.tembusan || '') : row.tembusan;
+      return tembusanListHtml(tembusanValue) ? `
+        <div class="tembusan-block">
+          <div class="tembusan-title"><strong>Tembusan:</strong></div>
+          <div class="tembusan-list">${tembusanListHtml(tembusanValue)}</div>
+        </div>
+      ` : '';
+    })()}
   `;
 }
 function metaTable(rows) {
