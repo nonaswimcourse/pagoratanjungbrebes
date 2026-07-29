@@ -3250,6 +3250,7 @@ function buildOutgoingTemplate(row, profile, type, signatureOptions = DEFAULT_SI
         <p>Yth.</p>
         <p><strong>${safeMultiline(row.pengirim)}</strong></p>
         <p>${safe(row.penerima)}</p>
+        ${row.alamat_tujuan ? '<div class="doc-one-enter-gap"></div>' : ''}
         <p>${safe(row.alamat_tujuan || '')}</p>
       </div>
       ${buildActivityMeta(row)}
@@ -3321,6 +3322,7 @@ function buildInvitationTemplate(row, profile, type, signatureOptions = DEFAULT_
       <div class="recipient">
         <p>Yth.</p>
         <p><strong>${safeMultiline(row.pengirim)}</strong></p>
+        ${row.alamat_tujuan ? '<div class="doc-one-enter-gap"></div>' : ''}
         <p>${safe(row.alamat_tujuan || '')}</p>
       </div>
       <div class="doc-one-enter-gap"></div>
