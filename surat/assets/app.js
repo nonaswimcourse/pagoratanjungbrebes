@@ -740,6 +740,12 @@ function safe(value) {
   }[char]));
 }
 
+// Sama seperti safe(), tapi baris baru (Enter) diubah menjadi <br> agar beberapa nama
+// yang diinput ke bawah (satu nama per baris) tetap tampil bertingkat di surat.
+function safeMultiline(value) {
+  return safe(value).replace(/\n/g, '<br>');
+}
+
 // DIPERBAIKI: Mengamankan argumen string agar aman masuk ke dalam atribut onclick HTML
 function jsAttr(value) {
   return String(value ?? '')
@@ -2064,7 +2070,7 @@ function documentFormHTML(typeKey, row = {}, mode = 'create') {
         </div>
         <div class="field">
           <label>${safe(type.primaryLabel)}</label>
-          <input name="pengirim" required value="${safe(data.pengirim)}" placeholder="Isi nama pihak terkait" ${disabled}>
+          <textarea name="pengirim" required rows="3" placeholder="Isi nama pihak terkait. Bisa lebih dari satu, tekan Enter untuk baris baru" ${disabled}>${safe(data.pengirim)}</textarea>
         </div>
         <div class="field">
           <label>${safe(type.secondaryLabel)}</label>
@@ -2575,7 +2581,7 @@ function renderTable(rows, options = {}) {
               <td><strong>${safe(row.nomor_surat)}</strong>${row.nomor_agenda ? `<br><small>Agenda: ${safe(row.nomor_agenda)}</small>` : ''}</td>
               <td>${formatDateShort(row.tanggal_surat)}</td>
               <td>${safe(row.perihal)}</td>
-              <td>${safe(row.pengirim || row.penerima)}${row.penerima ? `<br><small>${safe(row.penerima)}</small>` : ''}</td>
+              <td>${safeMultiline(row.pengirim || row.penerima)}${row.penerima ? `<br><small>${safe(row.penerima)}</small>` : ''}</td>
               <td><span class="status ${safe(row.status)}">${safe(titleCase(row.status))}</span>${row.local_only ? '<br><small>Lokal</small>' : ''}</td>
               <td class="actions">${actionButtons(row)}</td>
             </tr>`).join('')}
@@ -3095,7 +3101,7 @@ function metaTable(rows) {
   return `
     <table class="meta-table">
       ${rows.filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '').map(([label, value]) => `
-        <tr><td>${safe(label)}</td><td>:</td><td>${safe(value || '-')}</td></tr>`).join('')}
+        <tr><td>${safe(label)}</td><td>:</td><td>${safeMultiline(value || '-')}</td></tr>`).join('')}
     </table>`;
 }
 
@@ -3242,7 +3248,7 @@ function buildOutgoingTemplate(row, profile, type, signatureOptions = DEFAULT_SI
               </div>
       <div class="recipient">
         <p>Yth.</p>
-        <p><strong>${safe(row.pengirim)}</strong></p>
+        <p><strong>${safeMultiline(row.pengirim)}</strong></p>
         <p>${safe(row.penerima)}</p>
         <p>${safe(row.alamat_tujuan || '')}</p>
       </div>
@@ -3314,7 +3320,7 @@ function buildInvitationTemplate(row, profile, type, signatureOptions = DEFAULT_
               </div>
       <div class="recipient">
         <p>Yth.</p>
-        <p><strong>${safe(row.pengirim)}</strong></p>
+        <p><strong>${safeMultiline(row.pengirim)}</strong></p>
         <p>${safe(row.alamat_tujuan || '')}</p>
       </div>
       <div class="doc-one-enter-gap"></div>
@@ -3339,7 +3345,7 @@ function buildDecisionTemplate(row, profile, type, signatureOptions = DEFAULT_SI
       <h2 class="template-title">${safe(type.templateTitle)}</h2>
       <p class="center-text">Nomor: ${safe(row.nomor_surat)}</p>
       <h3 class="center-text small-title">TENTANG</h3>
-      <h3 class="center-text small-title">${safe(row.pengirim)}</h3>
+      <h3 class="center-text small-title">${safeMultiline(row.pengirim)}</h3>
       <div class="body-text">
         ${metaTable([
           ['Tanggal', formatDateLong(row.tanggal_surat)],
