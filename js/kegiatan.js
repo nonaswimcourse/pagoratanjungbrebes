@@ -1,20 +1,14 @@
 // Ambil id dari URL, contoh: kegiatan/?id=2-tanjung-gelar-sparing-voli
-// Bagian judul di belakang strip cuma buat tampilan URL (SEO/rapi),
-// id asli yang dipakai buat cari data tetap bagian sebelum strip pertama.
+// atau kegiatan/?id=3fa85f64-5717-4562-b3fc-2c963f66afa6-tanjung-gelar-sparing-voli
+// Bagian judul di belakang cuma buat tampilan URL (SEO/rapi).
+// id asli dari Supabase bisa berupa UUID (mengandung banyak strip) atau angka biasa,
+// jadi dicek UUID lebih dulu sebelum jatuh ke aturan "sebelum strip pertama".
 function getIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  let raw = params.get('id');
-
-  // Fallback: kalau tidak ada ?id= di URL (misalnya halaman ini dipakai
-  // sebagai 404.html oleh GitHub Pages untuk path /kegiatan/<id>-<judul>/
-  // yang folder statisnya belum sempat dibuat oleh workflow generator),
-  // ambil id langsung dari path URL-nya.
-  if (!raw) {
-    const pathMatch = window.location.pathname.match(/\/kegiatan\/([^/]+)\/?/);
-    raw = pathMatch ? pathMatch[1] : null;
-  }
-
+  const raw = params.get('id');
   if (!raw) return null;
+  const uuidMatch = raw.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  if (uuidMatch) return uuidMatch[0];
   const match = raw.match(/^[^-]+/);
   return match ? match[0] : raw;
 }
