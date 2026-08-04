@@ -3,7 +3,17 @@
 // id asli yang dipakai buat cari data tetap bagian sebelum strip pertama.
 function getIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const raw = params.get('id');
+  let raw = params.get('id');
+
+  // Fallback: kalau tidak ada ?id= di URL (misalnya halaman ini dipakai
+  // sebagai 404.html oleh GitHub Pages untuk path /kegiatan/<id>-<judul>/
+  // yang folder statisnya belum sempat dibuat oleh workflow generator),
+  // ambil id langsung dari path URL-nya.
+  if (!raw) {
+    const pathMatch = window.location.pathname.match(/\/kegiatan\/([^/]+)\/?/);
+    raw = pathMatch ? pathMatch[1] : null;
+  }
+
   if (!raw) return null;
   const match = raw.match(/^[^-]+/);
   return match ? match[0] : raw;
