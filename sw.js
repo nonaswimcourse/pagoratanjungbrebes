@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pagora-tanjung-v6';
+const CACHE_NAME = 'pagora-tanjung-v7';
 const APP_SHELL = [
   '/index.html',
   '/profil/',
@@ -58,6 +58,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // CSS/JS: stale-while-revalidate so old cached logic (e.g. galeri rendering)
+  // never gets stuck on a device — it's refreshed in the background on every visit
+  // instead of only when the cache name changes.
+  const isAppCode = request.url.endsWith('.css') || request.url.endsWith('.js');
+  if (isAppCode) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const networkFetch = fetch(request)
+          .then((response) => {
+            if (response && response.status === 200 && response.type === 'basic') {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
+            return response;
+          })
+          .catch(() => cached);
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
+
+  // Everything else (images, icons, fonts): cache-first, they rarely change.
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
