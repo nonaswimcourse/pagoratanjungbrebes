@@ -16,6 +16,7 @@ mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => m
   galleryGrid.innerHTML = items.map(g => `
     <a class="g-item ${g.gClass}" data-cat="${g.cat}" href="/kegiatan/${buildKegiatanSlugId(g.id, g.title)}/" title="${g.title}" aria-label="${g.title}">
       <div class="bg" style="background-image:url('${g.image}')"></div>
+      <div class="bg-fg" style="background-image:url('${g.image}')"></div>
       <div class="content"><span class="tag">${g.tag}</span><span class="title">${g.title}</span></div>
     </a>
   `).join('');

@@ -43,7 +43,10 @@ async function renderArticle() {
     <span class="m-eyebrow">${item.tag}</span>
     <h1>${item.title}</h1>
     <div class="article-meta">${item.date}</div>
-    <div class="article-hero"><img src="${item.image}" alt="${item.title}"></div>
+    <div class="article-hero">
+      <div class="article-hero-bg" style="background-image:url('${item.image}')"></div>
+      <img src="${item.image}" alt="${item.title}">
+    </div>
     <div class="article-body">${bodyHtml}</div>
 
     <div class="comment-box">
@@ -76,6 +79,7 @@ async function renderArticle() {
   related.innerHTML = others.map(g => `
     <a class="related-card" href="/kegiatan/${buildKegiatanSlugId(g.id, g.title)}/" title="${g.title}" aria-label="${g.title}">
       <div class="related-img" style="background-image:url('${g.image}')"></div>
+      <div class="related-img-fg" style="background-image:url('${g.image}')"></div>
       <div class="related-content">
         <span class="tag">${g.tag}</span>
         <span class="title">${g.title}</span>
