@@ -387,8 +387,9 @@ section{padding:120px 0;position:relative;}
   display:flex;align-items:flex-end;padding:22px;cursor:pointer;
   border:1px solid var(--line);
 }
-.g-item .bg{position:absolute;inset:0;opacity:.9;transition:transform .4s ease;background-size:cover;background-position:center;}
-.g-item:hover .bg{transform:scale(1.08);}
+.g-item .bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(20px) brightness(.55);transform:scale(1.2);}
+.g-item .bg-fg{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;transition:transform .4s ease;}
+.g-item:hover .bg-fg{transform:scale(1.06);}
 .g-item .content{position:relative;z-index:3;}
 .g-item .tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--lime);letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:6px;}
 .g-item .title{font-weight:700;font-size:16px;}
@@ -430,10 +431,11 @@ section{padding:120px 0;position:relative;}
   letter-spacing:.5px;margin-bottom:28px;
 }
 .article-hero{
-  width:100%;aspect-ratio:16/9;border-radius:var(--radius);overflow:hidden;
+  position:relative;width:100%;aspect-ratio:16/9;border-radius:var(--radius);overflow:hidden;
   border:1px solid var(--line);margin-bottom:32px;
 }
-.article-hero img{width:100%;height:100%;object-fit:cover;}
+.article-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(24px) brightness(.55);transform:scale(1.2);}
+.article-hero img{position:relative;width:100%;height:100%;object-fit:contain;}
 /* ---------------- SHARE BOX (Salin Link & WhatsApp di halaman kegiatan) ---------------- */
 .share-box{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:32px;}
 .share-label{
@@ -467,8 +469,9 @@ section{padding:120px 0;position:relative;}
   position:relative;border-radius:16px;overflow:hidden;aspect-ratio:4/3;
   display:flex;align-items:flex-end;padding:16px;border:1px solid var(--line);
 }
-.related-img{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.9;transition:transform .4s ease;}
-.related-card:hover .related-img{transform:scale(1.08);}
+.related-img{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(18px) brightness(.55);transform:scale(1.2);}
+.related-img-fg{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;transition:transform .4s ease;}
+.related-card:hover .related-img-fg{transform:scale(1.06);}
 .related-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,24,26,0) 30%, rgba(20,24,26,.92) 100%);}
 .related-content{position:relative;z-index:3;}
 .related-content .tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--lime);letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:4px;}
