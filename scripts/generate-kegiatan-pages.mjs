@@ -134,6 +134,7 @@ function renderPage(item, others) {
   const relatedHtml = others.slice(0, 3).map(g => `
     <a class="related-card" href="/kegiatan/${buildSlugId(g.id, g.title)}/" title="${escapeHtml(g.title)}" aria-label="${escapeHtml(g.title)}">
       <div class="related-img" style="background-image:url('${escapeHtml(g.image)}')"></div>
+      <div class="related-img-fg" style="background-image:url('${escapeHtml(g.image)}')"></div>
       <div class="related-content">
         <span class="tag">${escapeHtml(g.tag)}</span>
         <span class="title">${escapeHtml(g.title)}</span>
