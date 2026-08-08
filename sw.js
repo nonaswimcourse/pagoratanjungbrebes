@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pagora-tanjung-v7';
+const CACHE_NAME = 'pagora-tanjung-init';
 const APP_SHELL = [
   '/index.html',
   '/profil/',
@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
   if (isAppCode) {
     event.respondWith(
       caches.match(request).then((cached) => {
-        const networkFetch = fetch(request)
+        const networkFetch = fetch(request, { cache: 'no-store' })
           .then((response) => {
             if (response && response.status === 200 && response.type === 'basic') {
               const clone = response.clone();
