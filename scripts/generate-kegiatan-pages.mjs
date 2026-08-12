@@ -111,6 +111,12 @@ function normalizeItem(row, index) {
     title: row.judul,
     date: formatTanggalIndonesia(row.tanggal),
     image: row.gambar,
+    // gambar_isi: foto kedua (opsional) yang tampil di tengah artikel,
+    // biar layout berita lebih "profesional" (foto judul di atas + foto isi di tengah).
+    // Kalau admin belum pernah isi foto isi, pakai foto judul lagi sebagai cadangan
+    // supaya layout tetap konsisten dan artikel tidak terasa kosong di tengah.
+    imageIsi: row.gambar_isi || row.gambar,
+    captionIsi: row.keterangan_isi || '',
     excerpt: row.ringkasan || '',
     body: String(row.isi || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
   };
@@ -122,7 +128,19 @@ function renderPage(item, others) {
   const ogImage = absoluteUrl(item.image);
   const title = `${item.title} — PAGORA TANJUNG`;
   const desc = (item.excerpt || item.body[0] || '').slice(0, 200);
-  const bodyHtml = item.body.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+
+  // ---- sisipkan foto isi di tengah artikel (setelah paragraf pertama) ----
+  // biar tampilan berita lebih profesional: foto judul di atas, foto isi di tengah teks.
+  const contentImageHtml = item.imageIsi ? `
+    <figure class="article-content-image">
+      <img src="${escapeHtml(item.imageIsi)}" alt="${escapeHtml(item.captionIsi || item.title)}" loading="lazy">
+      ${item.captionIsi ? `<figcaption>${escapeHtml(item.captionIsi)}</figcaption>` : ''}
+    </figure>` : '';
+  const paragraphs = item.body.map(p => `<p>${escapeHtml(p)}</p>`);
+  const insertAt = paragraphs.length > 1 ? Math.ceil(paragraphs.length / 2) : paragraphs.length;
+  const bodyHtml = contentImageHtml
+    ? [...paragraphs.slice(0, insertAt), contentImageHtml, ...paragraphs.slice(insertAt)].join('')
+    : paragraphs.join('');
 
   // ---- link share (Salin Link & WhatsApp) ----
   // waShareUrl dibangun dari `canonical` (bukan window.location.href) supaya
