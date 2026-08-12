@@ -112,7 +112,7 @@
               <input type="date" id="fDate" required>
             </div>
             <div class="field">
-              <label>Foto Kegiatan</label>
+              <label>Foto Judul (tampil di atas, bawah judul)</label>
               <input type="file" id="fImageFile" accept="image/*">
             </div>
           </div>
@@ -123,6 +123,16 @@
           <div class="field">
             <label>Isi Berita (pisahkan paragraf dengan baris kosong)</label>
             <textarea id="fBody" rows="6" required placeholder="Paragraf pertama...&#10;&#10;Paragraf kedua..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Foto Isi Berita (opsional, tampil di tengah artikel)</label>
+              <input type="file" id="fImageFile2" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Keterangan Foto Isi (opsional)</label>
+              <input type="text" id="fCaption2" placeholder="Contoh: Suasana pertandingan berlangsung sengit.">
+            </div>
           </div>
           <p id="formError" class="error-text" style="display:none;"></p>
           <div style="display:flex;gap:12px;">
