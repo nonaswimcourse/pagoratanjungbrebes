@@ -149,6 +149,7 @@ function startEdit(id, data) {
   document.getElementById('fDate').value = row.tanggal || '';
   document.getElementById('fExcerpt').value = row.ringkasan || '';
   document.getElementById('fBody').value = row.isi || '';
+  document.getElementById('fCaption2').value = row.keterangan_isi || '';
   formMode.textContent = 'Edit Kegiatan';
   submitBtn.textContent = 'Simpan Perubahan';
   cancelEditBtn.style.display = 'inline-flex';
@@ -167,8 +168,8 @@ async function deleteItem(id) {
   loadList();
 }
 
-async function uploadImageIfAny() {
-  const fileInput = document.getElementById('fImageFile');
+async function uploadImageIfAny(inputId) {
+  const fileInput = document.getElementById(inputId);
   const file = fileInput.files[0];
   if (!file) return null;
   const path = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
@@ -194,14 +195,18 @@ kegiatanForm.addEventListener('submit', async (e) => {
       tanggal: document.getElementById('fDate').value,
       upload_time: waktuUpload(),
       ringkasan: document.getElementById('fExcerpt').value.trim(),
-      isi: document.getElementById('fBody').value.trim()
+      isi: document.getElementById('fBody').value.trim(),
+      keterangan_isi: document.getElementById('fCaption2').value.trim()
     };
 
-    const imageUrl = await uploadImageIfAny();
+    const imageUrl = await uploadImageIfAny('fImageFile');
     if (imageUrl) payload.gambar = imageUrl;
 
+    const imageUrl2 = await uploadImageIfAny('fImageFile2');
+    if (imageUrl2) payload.gambar_isi = imageUrl2;
+
     if (!editingId && !imageUrl) {
-      throw new Error('Pilih foto kegiatan terlebih dahulu.');
+      throw new Error('Pilih foto judul kegiatan terlebih dahulu.');
     }
 
     let error;

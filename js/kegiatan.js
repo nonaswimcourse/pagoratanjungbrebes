@@ -37,7 +37,18 @@ async function renderArticle() {
   document.title = item.title + ' — PAGORA TANJUNG';
   document.getElementById('pageTitle').textContent = item.title + ' — PAGORA TANJUNG';
 
-  const bodyHtml = item.body.map(p => `<p>${p}</p>`).join('');
+  // ---- sisipkan foto isi di tengah artikel (setelah paragraf pertama) ----
+  // biar tampilan berita lebih profesional: foto judul di atas, foto isi di tengah teks.
+  const contentImageHtml = item.imageIsi ? `
+    <figure class="article-content-image">
+      <img src="${item.imageIsi}" alt="${item.captionIsi || item.title}" loading="lazy">
+      ${item.captionIsi ? `<figcaption>${item.captionIsi}</figcaption>` : ''}
+    </figure>` : '';
+  const paragraphs = item.body.map(p => `<p>${p}</p>`);
+  const insertAt = paragraphs.length > 1 ? Math.ceil(paragraphs.length / 2) : paragraphs.length;
+  const bodyHtml = contentImageHtml
+    ? [...paragraphs.slice(0, insertAt), contentImageHtml, ...paragraphs.slice(insertAt)].join('')
+    : paragraphs.join('');
 
   box.innerHTML = `
     <span class="m-eyebrow">${item.tag}</span>

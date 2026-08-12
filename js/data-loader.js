@@ -42,6 +42,8 @@ function mapRowToGaleriItem(row, index) {
     title: row.judul,
     date: formatTanggalIndonesia(row.tanggal),
     image: row.gambar,
+    imageIsi: row.gambar_isi || row.gambar,
+    captionIsi: row.keterangan_isi || '',
     excerpt: row.ringkasan || '',
     body: (row.isi || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
   };
