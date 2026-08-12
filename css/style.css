@@ -436,6 +436,17 @@ section{padding:120px 0;position:relative;}
 }
 .article-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(24px) brightness(.55);transform:scale(1.2);}
 .article-hero img{position:relative;width:100%;height:100%;object-fit:contain;}
+.article-content-image{
+  margin:28px 0;
+}
+.article-content-image img{
+  display:block;width:100%;aspect-ratio:16/10;object-fit:cover;
+  border-radius:var(--radius);border:1px solid var(--line);
+}
+.article-content-image figcaption{
+  margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;
+  color:var(--muted);text-align:center;padding:0 10px;
+}
 /* ---------------- SHARE BOX (Salin Link & WhatsApp di halaman kegiatan) ---------------- */
 .share-box{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:32px;}
 .share-label{
