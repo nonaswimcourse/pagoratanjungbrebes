@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -47,10 +48,17 @@
           <button type="button" class="secondary" id="importChevron">Buka ▾</button>
         </div>
         <div id="importBox" class="import-box" hidden>
-          <p class="muted">Satu peserta per baris, format: <b>Nama; Asal Sekolah</b><br>Contoh:<br>Wahyu Setiawan; SD Negeri Tanjung 01<br>Riski Amelia; SD Negeri Tanjung 03</p>
-          <textarea id="importText" rows="6" placeholder="Nama; Asal Sekolah"></textarea>
-          <button type="button" id="importBtn" class="primary">Import Peserta</button>
+          <p class="muted">Upload file Excel (.xlsx) atau CSV. Baris pertama harus judul kolom, minimal ada kolom <b>Nama</b> dan <b>Asal Sekolah</b> (nama kolom bebas, sistem akan menebak otomatis).</p>
+          <input type="file" id="importFile" accept=".xlsx,.xls,.csv">
+          <div id="importPreview"></div>
+          <button type="button" id="importBtn" class="primary" hidden>Import Peserta</button>
           <div id="importResult" class="muted"></div>
+
+          <details class="import-manual">
+            <summary>Atau tempel manual (tanpa file)</summary>
+            <textarea id="importText" rows="5" placeholder="Nama; Asal Sekolah"></textarea>
+            <button type="button" id="importTextBtn" class="secondary">Import dari Teks</button>
+          </details>
         </div>
       </div>
 

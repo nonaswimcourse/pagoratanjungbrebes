@@ -173,9 +173,92 @@ $("participantForm").addEventListener("submit", async (e) => {
   alert("Peserta berhasil disimpan.");
 });
 
-// ============ IMPORT MASSAL ============
+// ============ IMPORT MASSAL (Excel/CSV + tempel manual) ============
+
+let pendingImportRows = [];
+
+// Cari nama header kolom yang cocok (fleksibel: "Nama", "nama peserta", dst.)
+function findColumn(headerRow, patterns) {
+  for (let i = 0; i < headerRow.length; i++) {
+    const h = String(headerRow[i] || "").toLowerCase().trim();
+    if (patterns.some(p => h.includes(p))) return i;
+  }
+  return -1;
+}
+
+function rowsFromSheet(sheetRows) {
+  if (!sheetRows.length) return { rows: [], error: "File kosong." };
+  const header = sheetRows[0];
+  const namaIdx = findColumn(header, ["nama"]);
+  const sekolahIdx = findColumn(header, ["sekolah", "asal"]);
+  if (namaIdx === -1 || sekolahIdx === -1) {
+    return { rows: [], error: 'Tidak menemukan kolom "Nama" dan "Asal Sekolah" di baris pertama file.' };
+  }
+  const rows = [];
+  for (let i = 1; i < sheetRows.length; i++) {
+    const r = sheetRows[i];
+    if (!r || !r.length) continue;
+    const nama = String(r[namaIdx] ?? "").trim();
+    const asal_sekolah = String(r[sekolahIdx] ?? "").trim();
+    if (!nama || !asal_sekolah) continue;
+    rows.push({ nama, asal_sekolah, kode_qr: newKodeQr() });
+  }
+  return { rows, error: null };
+}
+
+$("importFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  const preview = $("importPreview");
+  const importBtn = $("importBtn");
+  pendingImportRows = [];
+  importBtn.hidden = true;
+  if (!file) return;
+
+  if (typeof XLSX === "undefined") {
+    preview.innerHTML = `<p class="error">Library Excel gagal dimuat (cek koneksi internet).</p>`;
+    return;
+  }
+
+  preview.innerHTML = "Membaca file...";
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const sheetRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+    const { rows, error } = rowsFromSheet(sheetRows);
+    if (error) {
+      preview.innerHTML = `<p class="error">${esc(error)}</p>`;
+      return;
+    }
+    if (!rows.length) {
+      preview.innerHTML = `<p class="error">Tidak ada baris data yang valid di file ini.</p>`;
+      return;
+    }
+    pendingImportRows = rows;
+    const contoh = rows.slice(0, 5).map(r => `${esc(r.nama)} — ${esc(r.asal_sekolah)}`).join("<br>");
+    preview.innerHTML = `<p class="muted">Ditemukan <b>${rows.length}</b> peserta. Contoh:<br>${contoh}${rows.length > 5 ? "<br>..." : ""}</p>`;
+    importBtn.hidden = false;
+  } catch (err) {
+    preview.innerHTML = `<p class="error">Gagal membaca file: ${esc(err.message)}</p>`;
+  }
+});
 
 $("importBtn").addEventListener("click", async () => {
+  if (!requireDb()) return alert(configError);
+  if (!pendingImportRows.length) return;
+  const resultBox = $("importResult");
+  resultBox.textContent = `Mengimport ${pendingImportRows.length} peserta...`;
+  const { error } = await db.from("peserta").insert(pendingImportRows);
+  if (error) return resultBox.textContent = "Gagal import: " + error.message;
+  resultBox.textContent = `Berhasil import ${pendingImportRows.length} peserta.`;
+  pendingImportRows = [];
+  $("importFile").value = "";
+  $("importPreview").innerHTML = "";
+  $("importBtn").hidden = true;
+  loadParticipants();
+});
+
+$("importTextBtn").addEventListener("click", async () => {
   if (!requireDb()) return alert(configError);
   const raw = $("importText").value.trim();
   const resultBox = $("importResult");

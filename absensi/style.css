@@ -42,7 +42,11 @@ textarea{resize:vertical}
 .qr-error{color:#b00020;font-size:12px}
 
 .toggle-row{cursor:pointer}
-.import-box textarea{min-height:110px}
+.import-box textarea{min-height:90px}
+.import-box input[type=file]{padding:10px}
+.import-manual{margin-top:14px;border-top:1px solid #e5e8ed;padding-top:10px}
+.import-manual summary{cursor:pointer;font-weight:700;color:#1666d9}
+#importPreview{margin:8px 0}
 #importResult{margin-top:6px}
 
 .table-wrap{overflow:auto}
