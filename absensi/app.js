@@ -987,8 +987,12 @@ $("downloadRekapPdf").addEventListener("click", () => {
   const selectedTanggal = $("rekapDateFilter").value || "semua";
 
   if (!rows.length) return alert("Belum ada data kehadiran untuk diunduh.");
-  if (typeof window.jspdf === "undefined") {
-    return alert("Library PDF gagal dimuat. Pastikan HP/komputer ini terhubung ke internet lalu muat ulang halaman.");
+  if (typeof window.jspdf === "undefined" || typeof window.jspdf.jsPDF !== "function") {
+    return alert("Library PDF (jsPDF) gagal dimuat. Pastikan HP/komputer ini terhubung ke internet lalu muat ulang halaman.");
+  }
+  const __testDoc = new window.jspdf.jsPDF();
+  if (typeof __testDoc.autoTable !== "function") {
+    return alert("Library tabel PDF (jsPDF-AutoTable) gagal dimuat sepenuhnya. Coba muat ulang halaman (tarik ke bawah untuk refresh), atau ganti jaringan internet lalu coba lagi.");
   }
 
   const originalLabel = btn.textContent;
