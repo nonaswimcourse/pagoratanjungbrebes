@@ -417,9 +417,14 @@ async function renderIdCard(p, settings) {
       ctx.save();
       photoClipPath(ctx, photoX, photoY, photoW, photoH, r);
       ctx.clip();
+      // Skala foto agar menutupi seluruh kotak (cover), lalu sejajarkan ke ATAS
+      // (bukan ke tengah) supaya kepala tidak terpotong — hasilnya foto tampil
+      // dari atas kepala sampai kira-kira setengah badan, bukan hanya wajah close-up.
       const ratio = Math.max(photoW / img.width, photoH / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
-      ctx.drawImage(img, photoX + photoW / 2 - iw / 2, photoY + photoH / 2 - ih / 2, iw, ih);
+      const drawX = photoX + photoW / 2 - iw / 2; // tengah secara horizontal
+      const drawY = photoY;                        // rata atas secara vertikal
+      ctx.drawImage(img, drawX, drawY, iw, ih);
       ctx.restore();
 
       ctx.save();
@@ -875,26 +880,99 @@ $("refresh").addEventListener("click", loadAttendance);
 
 // ============ REKAP ============
 
-let attendanceData = [];
+let attendanceData = [];      // seluruh data kehadiran (semua tanggal)
+let attendanceFiltered = [];  // data yang sedang ditampilkan/di-export (sesuai filter tanggal)
+let realtimeSubscribed = false;
+
+function formatTanggalPendek(tgl) {
+  try {
+    return new Date(tgl + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  } catch { return tgl; }
+}
+
+// Isi dropdown "Agenda / Tanggal" dari tanggal-tanggal yang ada di data,
+// sambil mempertahankan pilihan sebelumnya kalau masih tersedia.
+function renderDateFilterOptions() {
+  const select = $("rekapDateFilter");
+  const prevValue = select.value || "semua";
+  const tanggalUnik = [...new Set(attendanceData.map(x => x.tanggal))].sort((a, b) => b.localeCompare(a));
+
+  const opts = [`<option value="semua">Semua tanggal (${attendanceData.length})</option>`];
+  tanggalUnik.forEach(t => {
+    const jumlah = attendanceData.filter(x => x.tanggal === t).length;
+    opts.push(`<option value="${esc(t)}">${esc(formatTanggalPendek(t))} — ${jumlah} orang</option>`);
+  });
+  select.innerHTML = opts.join("");
+  select.value = [prevValue, ...tanggalUnik, "semua"].includes(prevValue) ? prevValue : "semua";
+}
+
+function applyAttendanceFilter() {
+  const box = $("attendanceList");
+  const selected = $("rekapDateFilter").value || "semua";
+  attendanceFiltered = selected === "semua"
+    ? attendanceData
+    : attendanceData.filter(x => x.tanggal === selected);
+
+  if (!attendanceFiltered.length) {
+    box.innerHTML = `<tr><td colspan="5">Belum ada data kehadiran untuk pilihan ini.</td></tr>`;
+  } else {
+    box.innerHTML = attendanceFiltered.map((x, i) => `
+      <tr><td>${i + 1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
+      <td>${x.tanggal}</td><td>${x.jam}</td></tr>`).join("");
+  }
+  $("stats").innerHTML = `<div><b>${attendanceFiltered.length}</b><span>Total scan${selected !== "semua" ? " (tanggal ini)" : ""}</span></div>`;
+}
+
+$("rekapDateFilter").addEventListener("change", applyAttendanceFilter);
 
 async function loadAttendance() {
   const box = $("attendanceList");
+  const btn = $("refresh");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Memuat...";
+
   if (!requireDb()) {
     box.innerHTML = `<tr><td colspan="5">${esc(configError)}</td></tr>`;
+    btn.disabled = false;
+    btn.textContent = originalLabel;
     return;
   }
-  const { data, error } = await db.from("kehadiran")
-    .select("id,tanggal,jam,peserta(nama,asal_sekolah)")
-    .order("tanggal", { ascending:false }).order("jam", { ascending:false });
-  if (error) {
-    box.innerHTML = `<tr><td colspan="5">${esc(error.message)}</td></tr>`;
-    return;
+
+  try {
+    const { data, error } = await db.from("kehadiran")
+      .select("id,tanggal,jam,peserta(nama,asal_sekolah)")
+      .order("tanggal", { ascending: false }).order("jam", { ascending: false });
+    if (error) {
+      box.innerHTML = `<tr><td colspan="5">Gagal memuat: ${esc(error.message)}</td></tr>`;
+      return;
+    }
+    attendanceData = data || [];
+    renderDateFilterOptions();
+    applyAttendanceFilter();
+    subscribeRealtimeAttendance();
+  } catch (err) {
+    box.innerHTML = `<tr><td colspan="5">Gagal memuat data (cek koneksi internet): ${esc(err.message)}</td></tr>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
-  attendanceData = data;
-  box.innerHTML = data.map((x,i) => `
-    <tr><td>${i+1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
-    <td>${x.tanggal}</td><td>${x.jam}</td></tr>`).join("");
-  $("stats").innerHTML = `<div><b>${data.length}</b><span>Total scan</span></div>`;
+}
+
+// Auto-refresh rekap kalau ada absen baru masuk secara realtime (mis. dari HP lain
+// yang sedang scan bersamaan), supaya tidak perlu klik Refresh terus-menerus.
+function subscribeRealtimeAttendance() {
+  if (realtimeSubscribed || !db) return;
+  try {
+    db.channel("kehadiran-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "kehadiran" }, () => {
+        loadAttendance();
+      })
+      .subscribe();
+    realtimeSubscribed = true;
+  } catch (err) {
+    console.error("Realtime tidak tersedia:", err);
+  }
 }
 
 // ============ EXPORT PDF REKAP (format daftar hadir cetak) ============
@@ -904,74 +982,100 @@ function formatTanggalIndonesia(date) {
 }
 
 $("downloadRekapPdf").addEventListener("click", () => {
-  if (!attendanceData.length) return alert("Belum ada data kehadiran untuk diunduh.");
-  if (typeof window.jspdf === "undefined") return alert("Library PDF gagal dimuat (cek koneksi internet).");
+  const btn = $("downloadRekapPdf");
+  const rows = attendanceFiltered.length ? attendanceFiltered : attendanceData;
+  const selectedTanggal = $("rekapDateFilter").value || "semua";
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
+  if (!rows.length) return alert("Belum ada data kehadiran untuk diunduh.");
+  if (typeof window.jspdf === "undefined") {
+    return alert("Library PDF gagal dimuat. Pastikan HP/komputer ini terhubung ke internet lalu muat ulang halaman.");
+  }
 
-  // Judul tahun mengikuti tahun yang ADA di data kehadiran (bukan tahun sekarang),
-  // supaya rekap tahun lalu tetap benar walau dibuka/diunduh di tahun berikutnya.
-  const years = [...new Set(attendanceData.map(x => (x.tanggal || "").slice(0, 4)).filter(Boolean))].sort();
-  let yearLabel = String(new Date().getFullYear());
-  if (years.length === 1) yearLabel = years[0];
-  else if (years.length > 1) yearLabel = `${years[0]} - ${years[years.length - 1]}`;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Menyiapkan PDF...";
 
-  let y = 15;
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
 
-  if (cardSettings.logo) {
-    try {
-      const props = doc.getImageProperties(cardSettings.logo);
-      const logoW = 18;
-      const logoH = (props.height / props.width) * logoW;
-      doc.addImage(cardSettings.logo, "PNG", pageW / 2 - logoW / 2, y, logoW, logoH);
-      y += logoH + 4;
-    } catch (err) {
-      console.error("Gagal menambahkan logo ke PDF:", err);
+    // Label tanggal/agenda mengikuti FILTER yang sedang dipilih di halaman Rekap,
+    // bukan selalu digabung semua tanggal — sesuai agenda pertemuan yang dipilih.
+    let agendaLabel;
+    let fileTag;
+    if (selectedTanggal === "semua") {
+      const years = [...new Set(rows.map(x => (x.tanggal || "").slice(0, 4)).filter(Boolean))].sort();
+      agendaLabel = years.length === 1 ? `TAHUN ${years[0]}`
+        : years.length > 1 ? `TAHUN ${years[0]} - ${years[years.length - 1]}`
+        : `TAHUN ${new Date().getFullYear()}`;
+      fileTag = "SemuaTanggal";
+    } else {
+      agendaLabel = formatTanggalIndonesia(new Date(selectedTanggal + "T00:00:00")).toUpperCase();
+      fileTag = selectedTanggal;
     }
-  }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text((rekapSettings.judul || defaultRekapSettings.judul).toUpperCase(), pageW / 2, y, { align: "center" });
-  y += 6;
-  doc.text(`KECAMATAN ${(rekapSettings.kecamatan || "-").toUpperCase()} TAHUN ${yearLabel}`, pageW / 2, y, { align: "center" });
-  y += 8;
+    let y = 15;
 
-  doc.autoTable({
-    startY: y,
-    head: [["No", "Nama", "Asal Sekolah", "Tanggal", "Jam"]],
-    body: attendanceData.map((x, i) => [
-      i + 1,
-      x.peserta?.nama || "-",
-      x.peserta?.asal_sekolah || "-",
-      x.tanggal || "-",
-      x.jam || "-"
-    ]),
-    styles: { font: "helvetica", fontSize: 10, cellPadding: 2.2 },
-    headStyles: { fillColor: [18, 63, 168], textColor: 255, fontStyle: "bold" },
-    margin: { left: 15, right: 15 }
-  });
+    if (cardSettings.logo) {
+      try {
+        const props = doc.getImageProperties(cardSettings.logo);
+        const logoW = 18;
+        const logoH = (props.height / props.width) * logoW;
+        doc.addImage(cardSettings.logo, "PNG", pageW / 2 - logoW / 2, y, logoW, logoH);
+        y += logoH + 4;
+      } catch (err) {
+        console.error("Gagal menambahkan logo ke PDF:", err);
+      }
+    }
 
-  let finalY = doc.lastAutoTable.finalY + 20;
-  if (finalY > 260) { doc.addPage(); finalY = 20; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text((rekapSettings.judul || defaultRekapSettings.judul).toUpperCase(), pageW / 2, y, { align: "center" });
+    y += 6;
+    doc.text(`KECAMATAN ${(rekapSettings.kecamatan || "-").toUpperCase()} — ${agendaLabel}`, pageW / 2, y, { align: "center" });
+    y += 8;
 
-  const signX = pageW - 70;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text(`${rekapSettings.tempat || "-"}, ${formatTanggalIndonesia(new Date())}`, signX, finalY);
-  doc.text("Ketua KKG PJOK", signX, finalY + 6);
+    doc.autoTable({
+      startY: y,
+      head: [["No", "Nama", "Asal Sekolah", "Tanggal", "Jam"]],
+      body: rows.map((x, i) => [
+        i + 1,
+        x.peserta?.nama || "-",
+        x.peserta?.asal_sekolah || "-",
+        x.tanggal || "-",
+        x.jam || "-"
+      ]),
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 2.2 },
+      headStyles: { fillColor: [18, 63, 168], textColor: 255, fontStyle: "bold" },
+      margin: { left: 15, right: 15 }
+    });
 
-  finalY += 28;
-  doc.setFont("helvetica", "bold");
-  doc.text(rekapSettings.namaKetua || "-", signX, finalY);
-  if (rekapSettings.nipKetua) {
+    let finalY = doc.lastAutoTable.finalY + 20;
+    if (finalY > 260) { doc.addPage(); finalY = 20; }
+
+    const signX = pageW - 70;
     doc.setFont("helvetica", "normal");
-    doc.text(`NIP.${rekapSettings.nipKetua}`, signX, finalY + 6);
-  }
+    doc.setFontSize(11);
+    doc.text(`${rekapSettings.tempat || "-"}, ${formatTanggalIndonesia(new Date())}`, signX, finalY);
+    doc.text("Ketua KKG PJOK", signX, finalY + 6);
 
-  doc.save(`Rekap_Kehadiran_${yearLabel}.pdf`);
+    finalY += 28;
+    doc.setFont("helvetica", "bold");
+    doc.text(rekapSettings.namaKetua || "-", signX, finalY);
+    if (rekapSettings.nipKetua) {
+      doc.setFont("helvetica", "normal");
+      doc.text(`NIP.${rekapSettings.nipKetua}`, signX, finalY + 6);
+    }
+
+    doc.save(`Rekap_Kehadiran_${fileTag}.pdf`);
+  } catch (err) {
+    console.error("Gagal membuat PDF:", err);
+    alert("Gagal membuat PDF: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 });
 
 function esc(v="") {
