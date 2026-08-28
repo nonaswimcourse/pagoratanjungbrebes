@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Absensi QR</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <header><h1>ABSENSI QR</h1><p>Scan QR Code dengan kamera HP</p></header>
+
+  <nav class="tabs">
+    <button class="tab active" data-page="scan">📷 Scan Absen</button>
+    <button class="tab" data-page="peserta">👥 Peserta</button>
+    <button class="tab" data-page="rekap">📊 Rekap</button>
+  </nav>
+
+  <main>
+    <section id="scan" class="page active">
+      <div class="card">
+        <h2>Scan QR Code</h2>
+        <p class="muted">Izinkan kamera ketika diminta. Arahkan QR peserta ke kamera.</p>
+        <div id="reader"></div>
+        <div id="result" class="result">Menunggu scan...</div>
+        <button id="startScan" class="primary">Mulai Kamera</button>
+        <button id="stopScan" class="secondary">Matikan Kamera</button>
+      </div>
+    </section>
+
+    <section id="peserta" class="page">
+      <div class="card">
+        <h2>Tambah Peserta</h2>
+        <form id="participantForm">
+          <input id="nomor" placeholder="Nomor peserta" required>
+          <input id="nama" placeholder="Nama peserta" required>
+          <input id="kelas" placeholder="Kelas / Kelompok">
+          <button class="primary">Simpan Peserta</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Daftar Peserta</h2>
+        <div id="participantList">Memuat...</div>
+      </div>
+    </section>
+
+    <section id="rekap" class="page">
+      <div class="card">
+        <div class="row">
+          <h2>Rekap Kehadiran</h2>
+          <button id="refresh" class="secondary">Refresh</button>
+        </div>
+        <div id="stats" class="stats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Tanggal</th><th>Jam</th></tr></thead>
+            <tbody id="attendanceList"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
