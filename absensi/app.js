@@ -19,6 +19,12 @@ $("toggleImport").addEventListener("click", () => {
   $("importChevron").textContent = box.hidden ? "Buka ▾" : "Tutup ▴";
 });
 
+$("toggleRekapSettings").addEventListener("click", () => {
+  const box = $("rekapSettingsBox");
+  box.hidden = !box.hidden;
+  $("rekapSettingsChevron").textContent = box.hidden ? "Buka ▾" : "Tutup ▴";
+});
+
 // --- Inisialisasi Supabase dibungkus try/catch supaya config.js yang belum
 // diisi tidak mematikan seluruh aplikasi.
 let db = null;
@@ -69,6 +75,427 @@ function newKodeQr() {
   return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
 }
 
+// ============ PENGATURAN KARTU ID (judul, sub-judul, logo — tersimpan di browser ini) ============
+
+const CARD_SETTINGS_KEY = "absensiKartuIdSettings";
+const defaultCardSettings = { judul: "KKG PJOK SD KEC.TANJUNG", subjudul: "KAB.BREBES", logo: "" };
+
+function loadCardSettings() {
+  try {
+    const raw = localStorage.getItem(CARD_SETTINGS_KEY);
+    if (!raw) return { ...defaultCardSettings };
+    return { ...defaultCardSettings, ...JSON.parse(raw) };
+  } catch { return { ...defaultCardSettings }; }
+}
+
+function saveCardSettingsToStorage(settings) {
+  localStorage.setItem(CARD_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+let cardSettings = loadCardSettings();
+
+$("cardJudul").value = cardSettings.judul;
+$("cardSubjudul").value = cardSettings.subjudul;
+if (cardSettings.logo) {
+  $("cardLogoPreview").src = cardSettings.logo;
+  $("cardLogoPreview").hidden = false;
+}
+
+$("toggleCardSettings").addEventListener("click", () => {
+  const box = $("cardSettingsBox");
+  box.hidden = !box.hidden;
+  $("cardSettingsChevron").textContent = box.hidden ? "Buka ▾" : "Tutup ▴";
+});
+
+$("cardLogoFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    cardSettings.logo = reader.result;
+    $("cardLogoPreview").src = reader.result;
+    $("cardLogoPreview").hidden = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+$("cardLogoClear").addEventListener("click", () => {
+  cardSettings.logo = "";
+  $("cardLogoFile").value = "";
+  $("cardLogoPreview").hidden = true;
+});
+
+$("cardSettingsSave").addEventListener("click", () => {
+  cardSettings.judul = $("cardJudul").value.trim() || defaultCardSettings.judul;
+  cardSettings.subjudul = $("cardSubjudul").value.trim() || defaultCardSettings.subjudul;
+  saveCardSettingsToStorage(cardSettings);
+  alert("Pengaturan kartu disimpan.");
+});
+
+// ============ PENGATURAN REKAP & TANDA TANGAN (kecamatan, tempat, ketua KKG, NIP) ============
+
+const REKAP_SETTINGS_KEY = "absensiRekapSettings";
+const defaultRekapSettings = {
+  judul: "DAFTAR HADIR KKG PJOK SD",
+  kecamatan: "TANJUNG",
+  tempat: "Tanjung",
+  namaKetua: "Candra Nuranto, S.Pd.",
+  nipKetua: "199803242024211006"
+};
+
+function loadRekapSettings() {
+  try {
+    const raw = localStorage.getItem(REKAP_SETTINGS_KEY);
+    if (!raw) return { ...defaultRekapSettings };
+    return { ...defaultRekapSettings, ...JSON.parse(raw) };
+  } catch { return { ...defaultRekapSettings }; }
+}
+
+function saveRekapSettingsToStorage(settings) {
+  localStorage.setItem(REKAP_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+let rekapSettings = loadRekapSettings();
+
+$("rekapJudul").value = rekapSettings.judul;
+$("rekapKecamatan").value = rekapSettings.kecamatan;
+$("rekapTempat").value = rekapSettings.tempat;
+$("rekapNamaKetua").value = rekapSettings.namaKetua;
+$("rekapNipKetua").value = rekapSettings.nipKetua;
+
+$("rekapSettingsSave").addEventListener("click", () => {
+  rekapSettings.judul = $("rekapJudul").value.trim() || defaultRekapSettings.judul;
+  rekapSettings.kecamatan = $("rekapKecamatan").value.trim() || defaultRekapSettings.kecamatan;
+  rekapSettings.tempat = $("rekapTempat").value.trim() || defaultRekapSettings.tempat;
+  rekapSettings.namaKetua = $("rekapNamaKetua").value.trim();
+  rekapSettings.nipKetua = $("rekapNipKetua").value.trim();
+  saveRekapSettingsToStorage(rekapSettings);
+  alert("Pengaturan rekap disimpan.");
+});
+
+// ============ FOTO PESERTA (dikompres jadi JPEG kecil, disimpan sebagai base64) ============
+
+function compressImageFile(file, maxDim = 480, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => reject(new Error("Gagal memuat foto."));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error("Gagal membaca file foto."));
+    reader.readAsDataURL(file);
+  });
+}
+
+let pendingFotoDataUrl = "";
+
+$("fotoFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    pendingFotoDataUrl = await compressImageFile(file);
+    $("fotoPreview").src = pendingFotoDataUrl;
+    $("fotoPreviewRow").hidden = false;
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+$("fotoClearBtn").addEventListener("click", () => {
+  pendingFotoDataUrl = "";
+  $("fotoFile").value = "";
+  $("fotoPreviewRow").hidden = true;
+});
+
+// ============ RENDER KARTU ID (canvas, ukuran cetak 5 x 8.5 cm @300dpi) ============
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Gagal memuat logo."));
+    img.src = src;
+  });
+}
+
+function wrapLines(ctx, text, maxWidth) {
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+  words.forEach(word => {
+    const test = line ? line + " " + word : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  });
+  if (line) lines.push(line);
+  return lines;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawCardBackground(ctx, w, h) {
+  const NAVY = "#123fa8";
+  const ORANGE = "#f7a823";
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+
+  // --- pita dekoratif atas ---
+  ctx.fillStyle = ORANGE;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w, 0);
+  ctx.lineTo(w, h * 0.10);
+  ctx.quadraticCurveTo(w * 0.65, h * 0.19, w * 0.35, h * 0.09);
+  ctx.quadraticCurveTo(w * 0.15, h * 0.03, 0, h * 0.115);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = NAVY;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w, 0);
+  ctx.lineTo(w, h * 0.045);
+  ctx.quadraticCurveTo(w * 0.6, h * 0.11, w * 0.32, h * 0.035);
+  ctx.quadraticCurveTo(w * 0.14, 0, 0, h * 0.05);
+  ctx.closePath();
+  ctx.fill();
+
+  // --- pita dekoratif bawah (cermin dari atas) ---
+  ctx.fillStyle = ORANGE;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.lineTo(0, h * 0.86);
+  ctx.quadraticCurveTo(w * 0.3, h * 0.95, w * 0.55, h * 0.885);
+  ctx.quadraticCurveTo(w * 0.8, h * 0.82, w, h * 0.905);
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = NAVY;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.lineTo(0, h * 0.945);
+  ctx.quadraticCurveTo(w * 0.35, h, w * 0.6, h * 0.955);
+  ctx.quadraticCurveTo(w * 0.85, h * 0.9, w, h * 0.965);
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fill();
+
+  // --- aksen lingkaran ---
+  ctx.fillStyle = NAVY;
+  ctx.beginPath();
+  ctx.arc(w * 0.86, h * 0.335, w * 0.055, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = ORANGE;
+  ctx.beginPath();
+  ctx.arc(w * 0.17, h * 0.685, w * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+async function renderIdCard(p, settings) {
+  const W = 600, H = 1020; // rasio 5 x 8.5 cm, resolusi cetak (300dpi)
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  drawCardBackground(ctx, W, H);
+
+  let cursorY = 150;
+
+  // --- logo (opsional) ---
+  if (settings.logo) {
+    try {
+      const img = await loadImage(settings.logo);
+      const r = 62;
+      const cx = W / 2, cy = 150;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      const size = r * 2;
+      const ratio = Math.max(size / img.width, size / img.height);
+      const iw = img.width * ratio, ih = img.height * ratio;
+      ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih);
+      ctx.restore();
+      cursorY = 250;
+    } catch {
+      cursorY = 170;
+    }
+  } else {
+    cursorY = 170;
+  }
+
+  // --- judul ---
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#123fa8";
+  ctx.font = "bold 40px Arial, sans-serif";
+  const judulLines = wrapLines(ctx, settings.judul || "", W - 90);
+  judulLines.forEach(line => {
+    ctx.fillText(line, W / 2, cursorY);
+    cursorY += 46;
+  });
+
+  // --- sub-judul ---
+  cursorY += 10;
+  ctx.fillStyle = "#1a1a1a";
+  ctx.font = "bold 26px Arial, sans-serif";
+  const subLines = wrapLines(ctx, settings.subjudul || "", W - 90);
+  subLines.forEach(line => {
+    ctx.fillText(line, W / 2, cursorY);
+    cursorY += 32;
+  });
+
+  // --- QR code ---
+  // Ukuran QR & badge dipadatkan (dibanding versi sebelumnya) supaya selalu
+  // tersedia ruang bersih di pojok kanan bawah untuk foto peserta, tanpa
+  // menimpa tulisan nama/sekolah.
+  const qrSize = 300;
+  const qrY = Math.max(cursorY + 20, 260);
+  const tmp = document.createElement("div");
+  tmp.style.position = "fixed";
+  tmp.style.left = "-9999px";
+  document.body.appendChild(tmp);
+  try {
+    const qrCanvas = drawQr(tmp, p.kode_qr);
+    ctx.drawImage(qrCanvas, W / 2 - qrSize / 2, qrY, qrSize, qrSize);
+  } finally {
+    document.body.removeChild(tmp);
+  }
+
+  // --- badge nama + sekolah ---
+  const badgeY = qrY + qrSize + 30;
+  const badgeH = 100;
+  const badgeW = W - 90;
+  const badgeX = 45;
+  ctx.fillStyle = "#123fa8";
+  roundRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 26px Arial, sans-serif";
+  ctx.fillText(p.nama.toUpperCase(), W / 2, badgeY + 42);
+  ctx.font = "20px Arial, sans-serif";
+  ctx.fillText((p.asal_sekolah || "-").toUpperCase(), W / 2, badgeY + 76);
+
+  // --- foto peserta (pojok kanan bawah, di bawah badge, gaya kartu contoh) ---
+  if (p.foto) {
+    try {
+      const img = await loadImage(p.foto);
+      const photoW = W * 0.42;
+      const photoY = badgeY + badgeH + 15;
+      const photoH = H - photoY;
+      const photoX = W - photoW;
+      const r = 40;
+
+      ctx.save();
+      photoClipPath(ctx, photoX, photoY, photoW, photoH, r);
+      ctx.clip();
+      const ratio = Math.max(photoW / img.width, photoH / img.height);
+      const iw = img.width * ratio, ih = img.height * ratio;
+      ctx.drawImage(img, photoX + photoW / 2 - iw / 2, photoY + photoH / 2 - ih / 2, iw, ih);
+      ctx.restore();
+
+      ctx.save();
+      photoClipPath(ctx, photoX, photoY, photoW, photoH, r);
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+      ctx.restore();
+    } catch (err) {
+      console.error("Gagal memuat foto peserta di kartu:", err);
+    }
+  }
+
+  return canvas;
+}
+
+// Bentuk kotak foto: hanya sudut kiri-atas melengkung, sisi kanan & bawah rata
+// dengan tepi kartu (meniru gaya kartu ID pada contoh yang diberikan).
+function photoClipPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function downloadCanvas(canvas, filename) {
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+// ============ MODAL PRATINJAU KARTU ID ============
+
+let modalCanvas = null;
+let modalFileName = "Kartu_ID.png";
+
+function openCardPreview(canvas, p) {
+  modalCanvas = canvas;
+  modalFileName = `KartuID_${p.nama.replace(/[^a-z0-9_-]+/gi, "_")}_${p.id}.png`;
+  $("cardModalTitle").textContent = `Kartu ID — ${p.nama}`;
+  $("cardModalImg").src = canvas.toDataURL("image/png");
+  $("cardModal").hidden = false;
+}
+
+$("cardModalClose").addEventListener("click", () => { $("cardModal").hidden = true; });
+$("cardModal").addEventListener("click", (e) => { if (e.target === $("cardModal")) $("cardModal").hidden = true; });
+$("cardModalDownload").addEventListener("click", () => {
+  if (!modalCanvas) return;
+  downloadCanvas(modalCanvas, modalFileName);
+});
+
+// Buat pratinjau mini Kartu ID untuk tiap peserta di Daftar Peserta (di samping QR).
+async function renderCardThumbnails(data) {
+  for (const p of data) {
+    const container = document.getElementById(`cardthumb-${p.id}`);
+    if (!container) continue;
+    try {
+      const canvas = await renderIdCard(p, cardSettings);
+      const img = document.createElement("img");
+      img.src = canvas.toDataURL("image/png");
+      img.alt = `Kartu ID ${p.nama}`;
+      container.innerHTML = "";
+      container.appendChild(img);
+      container.addEventListener("click", () => openCardPreview(canvas, p));
+    } catch (err) {
+      container.textContent = "Gagal";
+      console.error("Gagal membuat pratinjau kartu untuk", p.nama, err);
+    }
+  }
+}
+
 // ============ PESERTA (list, tambah, edit, hapus) ============
 
 async function loadParticipants() {
@@ -83,6 +510,7 @@ async function loadParticipants() {
   box.innerHTML = data.map(p => `
     <div class="participant" data-id="${p.id}">
       <div class="qr-thumb" id="qr-${p.id}"></div>
+      <div class="card-thumb" id="cardthumb-${p.id}" title="Lihat Kartu ID">Memuat...</div>
       <div class="info">
         <div class="view-mode">
           <b>${esc(p.nama)}</b>
@@ -91,10 +519,14 @@ async function loadParticipants() {
         <div class="edit-mode" hidden>
           <input class="edit-nama" value="${escAttr(p.nama)}" placeholder="Nama peserta">
           <input class="edit-sekolah" value="${escAttr(p.asal_sekolah || "")}" placeholder="Asal sekolah">
+          <label class="field-label">Foto (kosongkan jika tidak ingin diganti)</label>
+          <input type="file" class="edit-foto" accept="image/*">
+          ${p.foto ? `<img class="edit-foto-preview" src="${escAttr(p.foto)}" alt="Foto saat ini">` : ""}
         </div>
       </div>
       <div class="actions">
         <button type="button" class="secondary btn-download">⬇ QR</button>
+        <button type="button" class="secondary btn-card">🪪 Kartu ID</button>
         <button type="button" class="secondary btn-edit">✎ Edit</button>
         <button type="button" class="danger btn-delete">🗑 Hapus</button>
         <button type="button" class="primary btn-save" hidden>💾 Simpan</button>
@@ -115,12 +547,16 @@ async function loadParticipants() {
     }
   });
 
+  // Buat pratinjau mini Kartu ID di samping QR (seperti contoh desain kartu)
+  renderCardThumbnails(data);
+
   // ==== Aksi per kartu (unduh / edit / simpan / batal / hapus) ====
   box.querySelectorAll(".participant").forEach(card => {
     const id = card.dataset.id;
     const viewMode = card.querySelector(".view-mode");
     const editMode = card.querySelector(".edit-mode");
     const btnDownload = card.querySelector(".btn-download");
+    const btnCard = card.querySelector(".btn-card");
     const btnEdit = card.querySelector(".btn-edit");
     const btnDelete = card.querySelector(".btn-delete");
     const btnSave = card.querySelector(".btn-save");
@@ -140,6 +576,23 @@ async function loadParticipants() {
       }
     });
 
+    btnCard.addEventListener("click", async () => {
+      const original = btnCard.textContent;
+      btnCard.textContent = "Membuat...";
+      btnCard.disabled = true;
+      try {
+        const p = data.find(x => String(x.id) === String(id));
+        const cardCanvas = await renderIdCard(p, cardSettings);
+        const namaFile = p.nama.replace(/[^a-z0-9_-]+/gi, "_");
+        downloadCanvas(cardCanvas, `KartuID_${namaFile}_${id}.png`);
+      } catch (err) {
+        alert("Gagal membuat kartu: " + err.message);
+      } finally {
+        btnCard.textContent = original;
+        btnCard.disabled = false;
+      }
+    });
+
     btnEdit.addEventListener("click", () => {
       viewMode.hidden = true; editMode.hidden = false;
       btnEdit.hidden = true; btnDelete.hidden = true; btnDownload.hidden = true;
@@ -152,8 +605,27 @@ async function loadParticipants() {
       const nama = card.querySelector(".edit-nama").value.trim();
       const asal_sekolah = card.querySelector(".edit-sekolah").value.trim();
       if (!nama || !asal_sekolah) return alert("Nama dan asal sekolah wajib diisi.");
-      const { error } = await db.from("peserta").update({ nama, asal_sekolah }).eq("id", id);
-      if (error) return alert("Gagal menyimpan: " + error.message);
+
+      const payload = { nama, asal_sekolah };
+      const fotoFile = card.querySelector(".edit-foto")?.files?.[0];
+      if (fotoFile) {
+        btnSave.textContent = "Memproses foto...";
+        btnSave.disabled = true;
+        try {
+          payload.foto = await compressImageFile(fotoFile);
+        } catch (err) {
+          btnSave.textContent = "💾 Simpan";
+          btnSave.disabled = false;
+          return alert(err.message);
+        }
+      }
+
+      const { error } = await db.from("peserta").update(payload).eq("id", id);
+      if (error) {
+        btnSave.textContent = "💾 Simpan";
+        btnSave.disabled = false;
+        return alert("Gagal menyimpan: " + error.message);
+      }
       loadParticipants();
     });
 
@@ -167,15 +639,55 @@ async function loadParticipants() {
   });
 }
 
+$("downloadAllCards").addEventListener("click", async () => {
+  if (!requireDb()) return alert(configError);
+  if (typeof JSZip === "undefined") return alert("Library ZIP gagal dimuat (cek koneksi internet).");
+
+  const { data, error } = await db.from("peserta").select("*").order("nama");
+  if (error) return alert("Gagal mengambil data peserta: " + error.message);
+  if (!data.length) return alert("Belum ada peserta.");
+
+  const btn = $("downloadAllCards");
+  const original = btn.textContent;
+  const zip = new JSZip();
+
+  for (let i = 0; i < data.length; i++) {
+    const p = data[i];
+    btn.textContent = `Membuat ${i + 1}/${data.length}...`;
+    try {
+      const cardCanvas = await renderIdCard(p, cardSettings);
+      const blob = await new Promise(res => cardCanvas.toBlob(res, "image/png"));
+      const namaFile = p.nama.replace(/[^a-z0-9_-]+/gi, "_");
+      zip.file(`KartuID_${namaFile}_${p.id}.png`, blob);
+    } catch (err) {
+      console.error("Gagal membuat kartu untuk", p.nama, err);
+    }
+  }
+
+  btn.textContent = "Menyiapkan ZIP...";
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(zipBlob);
+  link.download = "Kartu_ID_Peserta.zip";
+  link.click();
+  URL.revokeObjectURL(link.href);
+
+  btn.textContent = original;
+});
+
 $("participantForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!requireDb()) return alert(configError);
   const nama = $("nama").value.trim();
   const asal_sekolah = $("sekolah").value.trim();
   if (!nama || !asal_sekolah) return alert("Nama dan asal sekolah wajib diisi.");
-  const { error } = await db.from("peserta").insert({ nama, asal_sekolah, kode_qr: newKodeQr() });
+  const payload = { nama, asal_sekolah, kode_qr: newKodeQr() };
+  if (pendingFotoDataUrl) payload.foto = pendingFotoDataUrl;
+  const { error } = await db.from("peserta").insert(payload);
   if (error) return alert(error.message);
   e.target.reset();
+  pendingFotoDataUrl = "";
+  $("fotoPreviewRow").hidden = true;
   loadParticipants();
   alert("Peserta berhasil disimpan.");
 });
@@ -363,6 +875,8 @@ $("refresh").addEventListener("click", loadAttendance);
 
 // ============ REKAP ============
 
+let attendanceData = [];
+
 async function loadAttendance() {
   const box = $("attendanceList");
   if (!requireDb()) {
@@ -376,11 +890,89 @@ async function loadAttendance() {
     box.innerHTML = `<tr><td colspan="5">${esc(error.message)}</td></tr>`;
     return;
   }
+  attendanceData = data;
   box.innerHTML = data.map((x,i) => `
     <tr><td>${i+1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
     <td>${x.tanggal}</td><td>${x.jam}</td></tr>`).join("");
   $("stats").innerHTML = `<div><b>${data.length}</b><span>Total scan</span></div>`;
 }
+
+// ============ EXPORT PDF REKAP (format daftar hadir cetak) ============
+
+function formatTanggalIndonesia(date) {
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+}
+
+$("downloadRekapPdf").addEventListener("click", () => {
+  if (!attendanceData.length) return alert("Belum ada data kehadiran untuk diunduh.");
+  if (typeof window.jspdf === "undefined") return alert("Library PDF gagal dimuat (cek koneksi internet).");
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+
+  // Judul tahun mengikuti tahun yang ADA di data kehadiran (bukan tahun sekarang),
+  // supaya rekap tahun lalu tetap benar walau dibuka/diunduh di tahun berikutnya.
+  const years = [...new Set(attendanceData.map(x => (x.tanggal || "").slice(0, 4)).filter(Boolean))].sort();
+  let yearLabel = String(new Date().getFullYear());
+  if (years.length === 1) yearLabel = years[0];
+  else if (years.length > 1) yearLabel = `${years[0]} - ${years[years.length - 1]}`;
+
+  let y = 15;
+
+  if (cardSettings.logo) {
+    try {
+      const props = doc.getImageProperties(cardSettings.logo);
+      const logoW = 18;
+      const logoH = (props.height / props.width) * logoW;
+      doc.addImage(cardSettings.logo, "PNG", pageW / 2 - logoW / 2, y, logoW, logoH);
+      y += logoH + 4;
+    } catch (err) {
+      console.error("Gagal menambahkan logo ke PDF:", err);
+    }
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text((rekapSettings.judul || defaultRekapSettings.judul).toUpperCase(), pageW / 2, y, { align: "center" });
+  y += 6;
+  doc.text(`KECAMATAN ${(rekapSettings.kecamatan || "-").toUpperCase()} TAHUN ${yearLabel}`, pageW / 2, y, { align: "center" });
+  y += 8;
+
+  doc.autoTable({
+    startY: y,
+    head: [["No", "Nama", "Asal Sekolah", "Tanggal", "Jam"]],
+    body: attendanceData.map((x, i) => [
+      i + 1,
+      x.peserta?.nama || "-",
+      x.peserta?.asal_sekolah || "-",
+      x.tanggal || "-",
+      x.jam || "-"
+    ]),
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 2.2 },
+    headStyles: { fillColor: [18, 63, 168], textColor: 255, fontStyle: "bold" },
+    margin: { left: 15, right: 15 }
+  });
+
+  let finalY = doc.lastAutoTable.finalY + 20;
+  if (finalY > 260) { doc.addPage(); finalY = 20; }
+
+  const signX = pageW - 70;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(`${rekapSettings.tempat || "-"}, ${formatTanggalIndonesia(new Date())}`, signX, finalY);
+  doc.text("Ketua KKG PJOK", signX, finalY + 6);
+
+  finalY += 28;
+  doc.setFont("helvetica", "bold");
+  doc.text(rekapSettings.namaKetua || "-", signX, finalY);
+  if (rekapSettings.nipKetua) {
+    doc.setFont("helvetica", "normal");
+    doc.text(`NIP.${rekapSettings.nipKetua}`, signX, finalY + 6);
+  }
+
+  doc.save(`Rekap_Kehadiran_${yearLabel}.pdf`);
+});
 
 function esc(v="") {
   return String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));

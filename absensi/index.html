@@ -9,6 +9,9 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf-autotable.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -38,6 +41,12 @@
         <form id="participantForm">
           <input id="nama" placeholder="Nama peserta" required>
           <input id="sekolah" placeholder="Asal sekolah" required>
+          <label class="field-label">Foto (opsional, tampil di Kartu ID)</label>
+          <input type="file" id="fotoFile" accept="image/*">
+          <div class="row foto-preview-row" id="fotoPreviewRow" hidden>
+            <img id="fotoPreview" alt="Foto">
+            <button type="button" class="secondary" id="fotoClearBtn">Hapus Foto</button>
+          </div>
           <button class="primary">Simpan Peserta</button>
         </form>
       </div>
@@ -63,16 +72,56 @@
       </div>
 
       <div class="card">
-        <h2>Daftar Peserta</h2>
+        <div class="row toggle-row" id="toggleCardSettings">
+          <h2>Pengaturan Kartu ID</h2>
+          <button type="button" class="secondary" id="cardSettingsChevron">Buka ▾</button>
+        </div>
+        <div id="cardSettingsBox" class="import-box" hidden>
+          <p class="muted">Atur judul, sub-judul, dan logo yang tampil di setiap Kartu ID peserta.</p>
+          <input id="cardJudul" placeholder="Judul (mis. KKG PJOK SD KEC.TANJUNG)">
+          <input id="cardSubjudul" placeholder="Sub-judul (mis. KAB.BREBES)">
+          <input type="file" id="cardLogoFile" accept="image/*">
+          <div class="row" style="margin-top:8px">
+            <img id="cardLogoPreview" alt="Logo" hidden>
+            <button type="button" class="secondary" id="cardLogoClear">Hapus Logo</button>
+          </div>
+          <button type="button" class="primary" id="cardSettingsSave">Simpan Pengaturan</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <h2>Daftar Peserta</h2>
+          <button type="button" class="secondary" id="downloadAllCards">🪪 Unduh Semua Kartu (ZIP)</button>
+        </div>
         <div id="participantList">Memuat...</div>
       </div>
     </section>
 
     <section id="rekap" class="page">
       <div class="card">
+        <div class="row toggle-row" id="toggleRekapSettings">
+          <h2>Pengaturan Rekap &amp; Tanda Tangan</h2>
+          <button type="button" class="secondary" id="rekapSettingsChevron">Buka ▾</button>
+        </div>
+        <div id="rekapSettingsBox" class="import-box" hidden>
+          <p class="muted">Atur judul rekap, kecamatan, tempat tanda tangan, serta nama &amp; NIP Ketua KKG yang muncul di PDF. Ubah kapan saja, misalnya kalau Ketua KKG berganti tahun depan.</p>
+          <input id="rekapJudul" placeholder="Judul rekap (mis. DAFTAR HADIR KKG PJOK SD)">
+          <input id="rekapKecamatan" placeholder="Kecamatan (mis. TANJUNG)">
+          <input id="rekapTempat" placeholder="Tempat tanda tangan (mis. Tanjung)">
+          <input id="rekapNamaKetua" placeholder="Nama Ketua KKG (mis. Candra Nuranto, S.Pd.)">
+          <input id="rekapNipKetua" placeholder="NIP Ketua KKG">
+          <button type="button" class="primary" id="rekapSettingsSave">Simpan Pengaturan</button>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="row">
           <h2>Rekap Kehadiran</h2>
-          <button id="refresh" class="secondary">Refresh</button>
+          <div class="row-actions">
+            <button id="downloadRekapPdf" class="secondary">📄 Unduh PDF</button>
+            <button id="refresh" class="secondary">Refresh</button>
+          </div>
         </div>
         <div id="stats" class="stats"></div>
         <div class="table-wrap">
@@ -85,6 +134,18 @@
     </section>
   </main>
 </div>
+
+<div id="cardModal" class="modal" hidden>
+  <div class="modal-inner">
+    <div class="row">
+      <h2 id="cardModalTitle">Kartu ID</h2>
+      <button type="button" class="secondary" id="cardModalClose">✕ Tutup</button>
+    </div>
+    <img id="cardModalImg" alt="Kartu ID">
+    <button type="button" class="primary" id="cardModalDownload">⬇ Unduh Kartu Ini</button>
+  </div>
+</div>
+
 <script type="module" src="app.js"></script>
 </body>
 </html>
