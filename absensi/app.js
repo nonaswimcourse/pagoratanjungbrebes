@@ -1,6 +1,5 @@
 // --- Pasang tab menu duluan, SEBELUM apa pun yang berhubungan dengan Supabase.
-// Ini penting: kalau config.js salah isi / koneksi Supabase gagal, menu tetap
-// bisa diklik dan halaman tetap bisa dibuka.
+// Kalau config.js salah isi / koneksi Supabase gagal, menu tetap bisa diklik.
 const $ = (id) => document.getElementById(id);
 
 document.querySelectorAll(".tab").forEach(btn => {
@@ -14,8 +13,14 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
-// --- Inisialisasi Supabase dibungkus try/catch supaya kalau config.js belum
-// diisi / salah format, error-nya tidak mematikan seluruh aplikasi (menu tetap jalan).
+$("toggleImport").addEventListener("click", () => {
+  const box = $("importBox");
+  box.hidden = !box.hidden;
+  $("importChevron").textContent = box.hidden ? "Buka ▾" : "Tutup ▴";
+});
+
+// --- Inisialisasi Supabase dibungkus try/catch supaya config.js yang belum
+// diisi tidak mematikan seluruh aplikasi.
 let db = null;
 let configError = "";
 try {
@@ -42,42 +47,115 @@ let scanning = false;
 let lastCode = "";
 let lastScanAt = 0;
 
-// ============ PESERTA + QR ============
+// ============ QR helper ============
+
+function drawQr(canvas, text) {
+  return new Promise((resolve, reject) => {
+    if (typeof QRCode === "undefined") {
+      return reject(new Error("Library QR gagal dimuat (cek koneksi internet)."));
+    }
+    QRCode.toCanvas(canvas, text, { width: 128, margin: 1 }, (err) => {
+      if (err) reject(err); else resolve();
+    });
+  });
+}
+
+function newKodeQr() {
+  return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+}
+
+// ============ PESERTA (list, tambah, edit, hapus) ============
 
 async function loadParticipants() {
   const box = $("participantList");
   if (!requireDb(box)) return;
 
   box.innerHTML = "Memuat...";
-  const { data, error } = await db.from("peserta").select("*").order("nomor");
+  const { data, error } = await db.from("peserta").select("*").order("nama");
   if (error) return box.innerHTML = `<p class="error">${esc(error.message)}</p>`;
   if (!data.length) return box.innerHTML = "<p>Belum ada peserta.</p>";
 
   box.innerHTML = data.map(p => `
-    <div class="participant">
-      <div><b>${esc(p.nama)}</b><small>${esc(p.nomor)} · ${esc(p.kelas || "-")}</small></div>
-      <div class="qr-wrap">
-        <canvas id="qr-${p.id}" class="qr"></canvas>
-        <button type="button" class="download-qr" data-id="${p.id}" data-nama="${esc(p.nama)}" data-nomor="${esc(p.nomor)}">⬇ Unduh QR</button>
+    <div class="participant" data-id="${p.id}">
+      <canvas class="qr-thumb" id="qr-${p.id}"></canvas>
+      <div class="info">
+        <div class="view-mode">
+          <b>${esc(p.nama)}</b>
+          <small>${esc(p.asal_sekolah || "-")}</small>
+        </div>
+        <div class="edit-mode" hidden>
+          <input class="edit-nama" value="${escAttr(p.nama)}" placeholder="Nama peserta">
+          <input class="edit-sekolah" value="${escAttr(p.asal_sekolah || "")}" placeholder="Asal sekolah">
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary btn-download">⬇ QR</button>
+        <button type="button" class="secondary btn-edit">✎ Edit</button>
+        <button type="button" class="danger btn-delete">🗑 Hapus</button>
+        <button type="button" class="primary btn-save" hidden>💾 Simpan</button>
+        <button type="button" class="secondary btn-cancel" hidden>✕ Batal</button>
       </div>
     </div>`).join("");
 
+  // Gambar QR untuk tiap peserta
   data.forEach(p => {
     const canvas = document.getElementById(`qr-${p.id}`);
-    QRCode.toCanvas(canvas, p.kode_qr, { width: 120, margin: 1 }, (err) => {
-      if (err) console.error(err);
+    drawQr(canvas, p.kode_qr).catch(err => {
+      const card = canvas.closest(".participant");
+      const info = card.querySelector(".info");
+      info.insertAdjacentHTML("beforeend", `<div class="qr-error">QR gagal dibuat: ${esc(err.message)}</div>`);
+      card.querySelector(".btn-download").disabled = true;
     });
   });
 
-  box.querySelectorAll(".download-qr").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const canvas = $(`qr-${btn.dataset.id}`);
-      const link = document.createElement("a");
-      const namaFile = (btn.dataset.nomor + "_" + btn.dataset.nama)
-        .replace(/[^a-z0-9_-]+/gi, "_");
-      link.download = `QR_${namaFile}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+  // ==== Aksi per kartu (unduh / edit / simpan / batal / hapus) ====
+  box.querySelectorAll(".participant").forEach(card => {
+    const id = card.dataset.id;
+    const viewMode = card.querySelector(".view-mode");
+    const editMode = card.querySelector(".edit-mode");
+    const btnDownload = card.querySelector(".btn-download");
+    const btnEdit = card.querySelector(".btn-edit");
+    const btnDelete = card.querySelector(".btn-delete");
+    const btnSave = card.querySelector(".btn-save");
+    const btnCancel = card.querySelector(".btn-cancel");
+
+    btnDownload.addEventListener("click", () => {
+      const canvas = card.querySelector("canvas");
+      try {
+        const nama = card.querySelector(".edit-nama")?.value || viewMode.querySelector("b").textContent;
+        const link = document.createElement("a");
+        const namaFile = nama.replace(/[^a-z0-9_-]+/gi, "_");
+        link.download = `QR_${namaFile}_${id}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } catch (err) {
+        alert("Gagal mengunduh QR: " + err.message);
+      }
+    });
+
+    btnEdit.addEventListener("click", () => {
+      viewMode.hidden = true; editMode.hidden = false;
+      btnEdit.hidden = true; btnDelete.hidden = true; btnDownload.hidden = true;
+      btnSave.hidden = false; btnCancel.hidden = false;
+    });
+
+    btnCancel.addEventListener("click", () => loadParticipants());
+
+    btnSave.addEventListener("click", async () => {
+      const nama = card.querySelector(".edit-nama").value.trim();
+      const asal_sekolah = card.querySelector(".edit-sekolah").value.trim();
+      if (!nama || !asal_sekolah) return alert("Nama dan asal sekolah wajib diisi.");
+      const { error } = await db.from("peserta").update({ nama, asal_sekolah }).eq("id", id);
+      if (error) return alert("Gagal menyimpan: " + error.message);
+      loadParticipants();
+    });
+
+    btnDelete.addEventListener("click", async () => {
+      const nama = viewMode.querySelector("b").textContent;
+      if (!confirm(`Hapus peserta "${nama}"? Riwayat absensinya juga akan terhapus.`)) return;
+      const { error } = await db.from("peserta").delete().eq("id", id);
+      if (error) return alert("Gagal menghapus: " + error.message);
+      loadParticipants();
     });
   });
 }
@@ -85,15 +163,45 @@ async function loadParticipants() {
 $("participantForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!requireDb()) return alert(configError);
-  const nomor = $("nomor").value.trim();
   const nama = $("nama").value.trim();
-  const kelas = $("kelas").value.trim();
-  const kode_qr = nomor; // QR berisi kode unik peserta.
-  const { error } = await db.from("peserta").insert({ nomor, nama, kelas, kode_qr });
+  const asal_sekolah = $("sekolah").value.trim();
+  if (!nama || !asal_sekolah) return alert("Nama dan asal sekolah wajib diisi.");
+  const { error } = await db.from("peserta").insert({ nama, asal_sekolah, kode_qr: newKodeQr() });
   if (error) return alert(error.message);
   e.target.reset();
   loadParticipants();
   alert("Peserta berhasil disimpan.");
+});
+
+// ============ IMPORT MASSAL ============
+
+$("importBtn").addEventListener("click", async () => {
+  if (!requireDb()) return alert(configError);
+  const raw = $("importText").value.trim();
+  const resultBox = $("importResult");
+  if (!raw) return resultBox.textContent = "Isi daftar peserta dulu.";
+
+  const rows = [];
+  const skipped = [];
+  raw.split("\n").forEach((line, i) => {
+    const clean = line.trim();
+    if (!clean) return;
+    const parts = clean.split(/;|,/).map(s => s.trim());
+    const [nama, asal_sekolah] = parts;
+    if (!nama || !asal_sekolah) { skipped.push(i + 1); return; }
+    rows.push({ nama, asal_sekolah, kode_qr: newKodeQr() });
+  });
+
+  if (!rows.length) return resultBox.textContent = "Tidak ada baris valid. Format: Nama; Asal Sekolah";
+
+  resultBox.textContent = `Mengimport ${rows.length} peserta...`;
+  const { error } = await db.from("peserta").insert(rows);
+  if (error) return resultBox.textContent = "Gagal import: " + error.message;
+
+  resultBox.textContent = `Berhasil import ${rows.length} peserta.` +
+    (skipped.length ? ` Baris dilewati (format salah): ${skipped.join(", ")}.` : "");
+  $("importText").value = "";
+  loadParticipants();
 });
 
 // ============ SCAN ============
@@ -150,7 +258,7 @@ async function handleScan(code) {
   });
 
   if (insertError) return showResult("Gagal menyimpan: " + insertError.message, "bad");
-  showResult(`✅ ABSEN BERHASIL<br><b>${esc(peserta.nama)}</b><br>${peserta.nomor} · ${esc(peserta.kelas || "-")}`, "ok");
+  showResult(`✅ ABSEN BERHASIL<br><b>${esc(peserta.nama)}</b><br>${esc(peserta.asal_sekolah || "-")}`, "ok");
   loadAttendance();
 }
 
@@ -172,14 +280,14 @@ async function loadAttendance() {
     return;
   }
   const { data, error } = await db.from("kehadiran")
-    .select("id,tanggal,jam,peserta(nomor,nama,kelas)")
+    .select("id,tanggal,jam,peserta(nama,asal_sekolah)")
     .order("tanggal", { ascending:false }).order("jam", { ascending:false });
   if (error) {
     box.innerHTML = `<tr><td colspan="5">${esc(error.message)}</td></tr>`;
     return;
   }
   box.innerHTML = data.map((x,i) => `
-    <tr><td>${i+1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.kelas || "-")}</td>
+    <tr><td>${i+1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
     <td>${x.tanggal}</td><td>${x.jam}</td></tr>`).join("");
   $("stats").innerHTML = `<div><b>${data.length}</b><span>Total scan</span></div>`;
 }
@@ -187,6 +295,7 @@ async function loadAttendance() {
 function esc(v="") {
   return String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
+function escAttr(v="") { return esc(v); }
 
 // Kalau config.js belum diisi, tampilkan pesan begitu halaman dibuka.
 if (configError) {

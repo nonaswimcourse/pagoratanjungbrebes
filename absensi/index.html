@@ -35,12 +35,25 @@
       <div class="card">
         <h2>Tambah Peserta</h2>
         <form id="participantForm">
-          <input id="nomor" placeholder="Nomor peserta" required>
           <input id="nama" placeholder="Nama peserta" required>
-          <input id="kelas" placeholder="Kelas / Kelompok">
+          <input id="sekolah" placeholder="Asal sekolah" required>
           <button class="primary">Simpan Peserta</button>
         </form>
       </div>
+
+      <div class="card">
+        <div class="row toggle-row" id="toggleImport">
+          <h2>Import Daftar Peserta</h2>
+          <button type="button" class="secondary" id="importChevron">Buka ▾</button>
+        </div>
+        <div id="importBox" class="import-box" hidden>
+          <p class="muted">Satu peserta per baris, format: <b>Nama; Asal Sekolah</b><br>Contoh:<br>Wahyu Setiawan; SD Negeri Tanjung 01<br>Riski Amelia; SD Negeri Tanjung 03</p>
+          <textarea id="importText" rows="6" placeholder="Nama; Asal Sekolah"></textarea>
+          <button type="button" id="importBtn" class="primary">Import Peserta</button>
+          <div id="importResult" class="muted"></div>
+        </div>
+      </div>
+
       <div class="card">
         <h2>Daftar Peserta</h2>
         <div id="participantList">Memuat...</div>
@@ -56,7 +69,7 @@
         <div id="stats" class="stats"></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Tanggal</th><th>Jam</th></tr></thead>
+            <thead><tr><th>No</th><th>Nama</th><th>Asal Sekolah</th><th>Tanggal</th><th>Jam</th></tr></thead>
             <tbody id="attendanceList"></tbody>
           </table>
         </div>
