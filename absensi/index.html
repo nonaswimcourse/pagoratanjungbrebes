@@ -113,6 +113,12 @@
           <input id="rekapTempat" placeholder="Tempat tanda tangan (mis. Tanjung)">
           <input id="rekapNamaKetua" placeholder="Nama Ketua KKG (mis. Candra Nuranto, S.Pd.)">
           <input id="rekapNipKetua" placeholder="NIP Ketua KKG">
+          <label class="field-label">Tanda Tangan Ketua KKG (opsional, gambar tanda tangan/scan/foto)</label>
+          <input type="file" id="tandaTanganFile" accept="image/*">
+          <div class="row foto-preview-row" id="tandaTanganPreviewRow" hidden>
+            <img id="tandaTanganPreview" alt="Tanda tangan" style="max-height:60px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;padding:4px">
+            <button type="button" class="secondary" id="tandaTanganClearBtn">Hapus Tanda Tangan</button>
+          </div>
           <button type="button" class="primary" id="rekapSettingsSave">Simpan Pengaturan</button>
         </div>
       </div>
