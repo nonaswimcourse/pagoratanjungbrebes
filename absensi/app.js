@@ -59,16 +59,18 @@ let lastScanAt = 0;
 
 // ============ QR helper ============
 
-function drawQr(container, text) {
+function drawQr(container, text, size = 180) {
   container.innerHTML = "";
   if (typeof QRCode === "undefined") {
     throw new Error("Library QR gagal dimuat (cek koneksi internet).");
   }
   new QRCode(container, {
     text,
-    width: 180,
-    height: 180,
-    correctLevel: QRCode.CorrectLevel.M
+    width: size,
+    height: size,
+    // correctLevel H (bukan M) supaya QR tetap terbaca walau kartu dicetak
+    // agak kecil atau ada sedikit noda/lipatan pada kartu fisik.
+    correctLevel: QRCode.CorrectLevel.H
   });
   const canvas = container.querySelector("canvas");
   if (!canvas) throw new Error("QR tidak berhasil digambar di perangkat ini.");
@@ -298,6 +300,11 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// Tinggi header navy di bagian atas kartu. Dibuat sebagai blok rapi (bukan
+// pita bergelombang seperti versi sebelumnya) supaya area logo & judul
+// pasti tersedia dan tidak pernah tertimpa/terpotong elemen lain.
+const CARD_HEADER_H = 180;
+
 function drawCardBackground(ctx, w, h) {
   const NAVY = "#123fa8";
   const ORANGE = "#f7a823";
@@ -305,58 +312,13 @@ function drawCardBackground(ctx, w, h) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
-  // --- pita dekoratif atas ---
-  ctx.fillStyle = ORANGE;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(w, 0);
-  ctx.lineTo(w, h * 0.10);
-  ctx.quadraticCurveTo(w * 0.65, h * 0.19, w * 0.35, h * 0.09);
-  ctx.quadraticCurveTo(w * 0.15, h * 0.03, 0, h * 0.115);
-  ctx.closePath();
-  ctx.fill();
-
+  // --- header navy rapi ---
   ctx.fillStyle = NAVY;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(w, 0);
-  ctx.lineTo(w, h * 0.045);
-  ctx.quadraticCurveTo(w * 0.6, h * 0.11, w * 0.32, h * 0.035);
-  ctx.quadraticCurveTo(w * 0.14, 0, 0, h * 0.05);
-  ctx.closePath();
-  ctx.fill();
+  ctx.fillRect(0, 0, w, CARD_HEADER_H);
 
-  // --- pita dekoratif bawah (cermin dari atas) ---
+  // --- garis aksen oranye pemisah header ---
   ctx.fillStyle = ORANGE;
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  ctx.lineTo(0, h * 0.86);
-  ctx.quadraticCurveTo(w * 0.3, h * 0.95, w * 0.55, h * 0.885);
-  ctx.quadraticCurveTo(w * 0.8, h * 0.82, w, h * 0.905);
-  ctx.lineTo(w, h);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = NAVY;
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  ctx.lineTo(0, h * 0.945);
-  ctx.quadraticCurveTo(w * 0.35, h, w * 0.6, h * 0.955);
-  ctx.quadraticCurveTo(w * 0.85, h * 0.9, w, h * 0.965);
-  ctx.lineTo(w, h);
-  ctx.closePath();
-  ctx.fill();
-
-  // --- aksen lingkaran ---
-  ctx.fillStyle = NAVY;
-  ctx.beginPath();
-  ctx.arc(w * 0.86, h * 0.335, w * 0.055, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = ORANGE;
-  ctx.beginPath();
-  ctx.arc(w * 0.17, h * 0.685, w * 0.06, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillRect(0, CARD_HEADER_H, w, 8);
 }
 
 async function renderIdCard(p, settings) {
@@ -367,72 +329,94 @@ async function renderIdCard(p, settings) {
 
   drawCardBackground(ctx, W, H);
 
-  let cursorY = 150;
+  // --- logo (lingkaran putih di header, selalu digambar sebagai bingkai
+  // meski logo belum diisi, supaya header tetap rapi) ---
+  const logoCx = W / 2, logoCy = 88, logoR = 66;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(logoCx, logoCy, logoR, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#f7a823";
+  ctx.stroke();
+  ctx.restore();
 
-  // --- logo (opsional) ---
   if (settings.logo) {
     try {
       const img = await loadImage(settings.logo);
-      const r = 62;
-      const cx = W / 2, cy = 150;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(logoCx, logoCy, logoR - 6, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      const size = r * 2;
-      const ratio = Math.max(size / img.width, size / img.height);
+      // Mode "contain" (bukan "cover" seperti versi sebelumnya): logo hanya
+      // diperkecil secukupnya supaya utuh masuk ke lingkaran, sehingga logo
+      // TIDAK PERNAH terpotong walau bentuknya persegi panjang / lebar.
+      const size = (logoR - 6) * 2 * 0.94;
+      const ratio = Math.min(size / img.width, size / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
-      ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih);
+      ctx.drawImage(img, logoCx - iw / 2, logoCy - ih / 2, iw, ih);
       ctx.restore();
-      cursorY = 250;
-    } catch {
-      cursorY = 170;
+    } catch (err) {
+      console.error("Gagal memuat logo di kartu:", err);
     }
-  } else {
-    cursorY = 170;
   }
+
+  let cursorY = CARD_HEADER_H + 8 + 32;
 
   // --- judul ---
   ctx.textAlign = "center";
   ctx.fillStyle = "#123fa8";
-  ctx.font = "bold 40px Arial, sans-serif";
-  const judulLines = wrapLines(ctx, settings.judul || "", W - 90);
+  ctx.font = "bold 34px Arial, sans-serif";
+  const judulLines = wrapLines(ctx, settings.judul || "", W - 80);
   judulLines.forEach(line => {
     ctx.fillText(line, W / 2, cursorY);
-    cursorY += 46;
+    cursorY += 40;
   });
 
   // --- sub-judul ---
-  cursorY += 10;
-  ctx.fillStyle = "#1a1a1a";
-  ctx.font = "bold 26px Arial, sans-serif";
-  const subLines = wrapLines(ctx, settings.subjudul || "", W - 90);
+  cursorY += 6;
+  ctx.fillStyle = "#4a4a4a";
+  ctx.font = "bold 20px Arial, sans-serif";
+  const subLines = wrapLines(ctx, settings.subjudul || "", W - 80);
   subLines.forEach(line => {
     ctx.fillText(line, W / 2, cursorY);
-    cursorY += 32;
+    cursorY += 26;
   });
 
   // --- QR code ---
-  // Ukuran QR & badge dipadatkan (dibanding versi sebelumnya) supaya selalu
-  // tersedia ruang bersih di pojok kanan bawah untuk foto peserta, tanpa
-  // menimpa tulisan nama/sekolah.
-  const qrSize = 300;
-  const qrY = Math.max(cursorY + 20, 260);
+  // Dibungkus kotak putih berbingkai tipis supaya kontras & gampang dipindai,
+  // dan digambar langsung pada ukuran akhirnya (bukan diperbesar dari ukuran
+  // kecil seperti sebelumnya) supaya hasilnya TAJAM, tidak buram.
+  cursorY += 16;
+  const qrSize = 260;
+  const qrBoxPad = 16;
+  const qrBoxSize = qrSize + qrBoxPad * 2;
+  const qrBoxX = W / 2 - qrBoxSize / 2;
+  const qrBoxY = cursorY;
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 18);
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#d8dce8";
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 18);
+  ctx.stroke();
+
   const tmp = document.createElement("div");
   tmp.style.position = "fixed";
   tmp.style.left = "-9999px";
   document.body.appendChild(tmp);
   try {
-    const qrCanvas = drawQr(tmp, p.kode_qr);
-    ctx.drawImage(qrCanvas, W / 2 - qrSize / 2, qrY, qrSize, qrSize);
+    const qrCanvas = drawQr(tmp, p.kode_qr, qrSize);
+    ctx.drawImage(qrCanvas, qrBoxX + qrBoxPad, qrBoxY + qrBoxPad, qrSize, qrSize);
   } finally {
     document.body.removeChild(tmp);
   }
 
   // --- badge nama + sekolah ---
-  const badgeY = qrY + qrSize + 30;
-  const badgeH = 100;
+  const badgeY = qrBoxY + qrBoxSize + 18;
+  const badgeH = 88;
   const badgeW = W - 90;
   const badgeX = 45;
   ctx.fillStyle = "#123fa8";
@@ -441,26 +425,59 @@ async function renderIdCard(p, settings) {
 
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 26px Arial, sans-serif";
-  ctx.fillText(p.nama.toUpperCase(), W / 2, badgeY + 42);
+  ctx.fillText(p.nama.toUpperCase(), W / 2, badgeY + 38);
   ctx.font = "20px Arial, sans-serif";
-  ctx.fillText((p.asal_sekolah || "-").toUpperCase(), W / 2, badgeY + 76);
+  ctx.fillText((p.asal_sekolah || "-").toUpperCase(), W / 2, badgeY + 68);
 
-  // --- foto peserta (pojok kanan bawah, di bawah badge) ---
-  // Tanpa pembungkus/frame apa pun: foto (PNG transparan) ditempel apa adanya
-  // sesuai bentuk aslinya, hanya dibatasi area yang tersedia (contain, bukan
-  // dipotong ke dalam kotak) supaya tidak ada latar atau garis pembungkus.
+  // --- panel bawah (latar lembut penuh lebar) ---
+  // Memberi "bingkai" visual untuk area foto supaya ruang di sisi kiri tidak
+  // terasa seperti sisa kosong tak sengaja, sekaligus jadi tempat foto
+  // peserta yang jauh lebih besar dari versi sebelumnya.
+  const panelTop = badgeY + badgeH + 16;
+  ctx.fillStyle = "#eef1fb";
+  ctx.fillRect(0, panelTop, W, H - panelTop);
+  ctx.fillStyle = "#f7a823";
+  ctx.fillRect(20, panelTop + 14, W - 40, 4);
+
+  ctx.fillStyle = "#123fa8";
+  ctx.beginPath();
+  ctx.arc(90, panelTop + 70, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f7a823";
+  ctx.beginPath();
+  ctx.arc(65, panelTop + 120, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.font = "bold 15px Arial, sans-serif";
+  const vLabel = "KARTU TANDA PESERTA";
+  const vLabelWidth = ctx.measureText(vLabel).width;
+  if (vLabelWidth + 40 < H - panelTop) {
+    ctx.save();
+    ctx.translate(55, H - 20);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#123fa8";
+    ctx.fillText(vLabel, 0, 0);
+    ctx.restore();
+  }
+
+  // --- foto peserta (pojok kanan bawah) ---
+  // Area foto diperbesar signifikan dan sisi bawah/kanannya sengaja dibuat
+  // menyentuh tepi kartu (tanpa margin) — bukan "cover" yang memotong foto,
+  // tetap "contain" supaya foto tidak terpotong, hanya diperbesar sepenuhnya
+  // sampai menyentuh batas bawah kartu.
   if (p.foto) {
     try {
       const img = await loadImage(p.foto);
-      const areaW = W * 0.42;
-      const areaX = W - areaW - 20;
-      const areaTop = badgeY + badgeH + 15;
-      const areaH = H - 20 - areaTop;
+      const areaW = W * 0.58;
+      const areaX = W - areaW;
+      const areaTop = panelTop;
+      const areaH = H - areaTop;
 
       const ratio = Math.min(areaW / img.width, areaH / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
-      const drawX = areaX + (areaW - iw);   // rata kanan
-      const drawY = areaTop + (areaH - ih); // rata bawah
+      const drawX = areaX + (areaW - iw);   // rata kanan, menyentuh tepi kartu
+      const drawY = areaTop + (areaH - ih); // rata bawah, menyentuh garis paling bawah kartu
       ctx.drawImage(img, drawX, drawY, iw, ih);
     } catch (err) {
       console.error("Gagal memuat foto peserta di kartu:", err);
@@ -1045,7 +1062,7 @@ $("downloadRekapPdf").addEventListener("click", () => {
         const logoW = 18;
         const logoH = (props.height / props.width) * logoW;
         doc.addImage(cardSettings.logo, imageFormatFromDataUrl(cardSettings.logo), pageW / 2 - logoW / 2, y, logoW, logoH);
-        y += logoH + 1.5;
+        y += logoH + 5;
       } catch (err) {
         console.error("Gagal menambahkan logo ke PDF:", err);
       }
