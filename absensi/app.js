@@ -49,15 +49,20 @@ let lastScanAt = 0;
 
 // ============ QR helper ============
 
-function drawQr(canvas, text) {
-  return new Promise((resolve, reject) => {
-    if (typeof QRCode === "undefined") {
-      return reject(new Error("Library QR gagal dimuat (cek koneksi internet)."));
-    }
-    QRCode.toCanvas(canvas, text, { width: 128, margin: 1 }, (err) => {
-      if (err) reject(err); else resolve();
-    });
+function drawQr(container, text) {
+  container.innerHTML = "";
+  if (typeof QRCode === "undefined") {
+    throw new Error("Library QR gagal dimuat (cek koneksi internet).");
+  }
+  new QRCode(container, {
+    text,
+    width: 180,
+    height: 180,
+    correctLevel: QRCode.CorrectLevel.M
   });
+  const canvas = container.querySelector("canvas");
+  if (!canvas) throw new Error("QR tidak berhasil digambar di perangkat ini.");
+  return canvas;
 }
 
 function newKodeQr() {
@@ -77,7 +82,7 @@ async function loadParticipants() {
 
   box.innerHTML = data.map(p => `
     <div class="participant" data-id="${p.id}">
-      <canvas class="qr-thumb" id="qr-${p.id}"></canvas>
+      <div class="qr-thumb" id="qr-${p.id}"></div>
       <div class="info">
         <div class="view-mode">
           <b>${esc(p.nama)}</b>
@@ -99,13 +104,15 @@ async function loadParticipants() {
 
   // Gambar QR untuk tiap peserta
   data.forEach(p => {
-    const canvas = document.getElementById(`qr-${p.id}`);
-    drawQr(canvas, p.kode_qr).catch(err => {
-      const card = canvas.closest(".participant");
+    const container = document.getElementById(`qr-${p.id}`);
+    try {
+      drawQr(container, p.kode_qr);
+    } catch (err) {
+      const card = container.closest(".participant");
       const info = card.querySelector(".info");
       info.insertAdjacentHTML("beforeend", `<div class="qr-error">QR gagal dibuat: ${esc(err.message)}</div>`);
       card.querySelector(".btn-download").disabled = true;
-    });
+    }
   });
 
   // ==== Aksi per kartu (unduh / edit / simpan / batal / hapus) ====

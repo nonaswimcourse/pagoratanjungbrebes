@@ -34,7 +34,8 @@ textarea{resize:vertical}
   padding:12px 0;
 }
 .participant:first-child{border-top:0}
-.qr-thumb{width:64px;height:64px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none}
+.qr-thumb{width:64px;height:64px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.qr-thumb canvas{width:100%;height:100%;display:block}
 .participant .info small{display:block;margin-top:2px}
 .participant .info input{margin:4px 0;font-size:14px;padding:8px 10px}
 .actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
