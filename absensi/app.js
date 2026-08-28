@@ -1,13 +1,6 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let scanner = null;
-let scanning = false;
-let lastCode = "";
-let lastScanAt = 0;
-
+// --- Pasang tab menu duluan, SEBELUM apa pun yang berhubungan dengan Supabase.
+// Ini penting: kalau config.js salah isi / koneksi Supabase gagal, menu tetap
+// bisa diklik dan halaman tetap bisa dibuka.
 const $ = (id) => document.getElementById(id);
 
 document.querySelectorAll(".tab").forEach(btn => {
@@ -21,25 +14,77 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
+// --- Inisialisasi Supabase dibungkus try/catch supaya kalau config.js belum
+// diisi / salah format, error-nya tidak mematikan seluruh aplikasi (menu tetap jalan).
+let db = null;
+let configError = "";
+try {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./config.js");
+  if (!SUPABASE_URL || SUPABASE_URL.includes("PROJECT-ID") ||
+      !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("ISI_ANON")) {
+    configError = "config.js belum diisi dengan URL & anon key Supabase yang asli.";
+  } else {
+    const { createClient } = supabase;
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (err) {
+  configError = "Gagal memuat config.js: " + err.message;
+}
+
+function requireDb(box) {
+  if (db) return true;
+  if (box) box.innerHTML = `<p class="error">${esc(configError)}</p>`;
+  return false;
+}
+
+let scanner = null;
+let scanning = false;
+let lastCode = "";
+let lastScanAt = 0;
+
+// ============ PESERTA + QR ============
+
 async function loadParticipants() {
   const box = $("participantList");
+  if (!requireDb(box)) return;
+
+  box.innerHTML = "Memuat...";
   const { data, error } = await db.from("peserta").select("*").order("nomor");
-  if (error) return box.innerHTML = `<p class="error">${error.message}</p>`;
+  if (error) return box.innerHTML = `<p class="error">${esc(error.message)}</p>`;
   if (!data.length) return box.innerHTML = "<p>Belum ada peserta.</p>";
+
   box.innerHTML = data.map(p => `
     <div class="participant">
       <div><b>${esc(p.nama)}</b><small>${esc(p.nomor)} · ${esc(p.kelas || "-")}</small></div>
-      <div id="qr-${p.id}" class="qr"></div>
+      <div class="qr-wrap">
+        <canvas id="qr-${p.id}" class="qr"></canvas>
+        <button type="button" class="download-qr" data-id="${p.id}" data-nama="${esc(p.nama)}" data-nomor="${esc(p.nomor)}">⬇ Unduh QR</button>
+      </div>
     </div>`).join("");
+
   data.forEach(p => {
-    new QRCode(document.getElementById(`qr-${p.id}`), {
-      text: p.kode_qr, width: 90, height: 90
+    const canvas = document.getElementById(`qr-${p.id}`);
+    QRCode.toCanvas(canvas, p.kode_qr, { width: 120, margin: 1 }, (err) => {
+      if (err) console.error(err);
+    });
+  });
+
+  box.querySelectorAll(".download-qr").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const canvas = $(`qr-${btn.dataset.id}`);
+      const link = document.createElement("a");
+      const namaFile = (btn.dataset.nomor + "_" + btn.dataset.nama)
+        .replace(/[^a-z0-9_-]+/gi, "_");
+      link.download = `QR_${namaFile}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
     });
   });
 }
 
 $("participantForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (!requireDb()) return alert(configError);
   const nomor = $("nomor").value.trim();
   const nama = $("nama").value.trim();
   const kelas = $("kelas").value.trim();
@@ -50,6 +95,8 @@ $("participantForm").addEventListener("submit", async (e) => {
   loadParticipants();
   alert("Peserta berhasil disimpan.");
 });
+
+// ============ SCAN ============
 
 async function startScanner() {
   if (scanning) return;
@@ -77,6 +124,7 @@ async function stopScanner() {
 }
 
 async function handleScan(code) {
+  if (!requireDb()) return showResult(configError, "bad");
   const now = Date.now();
   if (code === lastCode && now - lastScanAt < 3000) return;
   lastCode = code; lastScanAt = now;
@@ -115,15 +163,22 @@ $("startScan").addEventListener("click", startScanner);
 $("stopScan").addEventListener("click", stopScanner);
 $("refresh").addEventListener("click", loadAttendance);
 
+// ============ REKAP ============
+
 async function loadAttendance() {
+  const box = $("attendanceList");
+  if (!requireDb()) {
+    box.innerHTML = `<tr><td colspan="5">${esc(configError)}</td></tr>`;
+    return;
+  }
   const { data, error } = await db.from("kehadiran")
     .select("id,tanggal,jam,peserta(nomor,nama,kelas)")
     .order("tanggal", { ascending:false }).order("jam", { ascending:false });
   if (error) {
-    $("attendanceList").innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`;
+    box.innerHTML = `<tr><td colspan="5">${esc(error.message)}</td></tr>`;
     return;
   }
-  $("attendanceList").innerHTML = data.map((x,i) => `
+  box.innerHTML = data.map((x,i) => `
     <tr><td>${i+1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.kelas || "-")}</td>
     <td>${x.tanggal}</td><td>${x.jam}</td></tr>`).join("");
   $("stats").innerHTML = `<div><b>${data.length}</b><span>Total scan</span></div>`;
@@ -131,4 +186,10 @@ async function loadAttendance() {
 
 function esc(v="") {
   return String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+// Kalau config.js belum diisi, tampilkan pesan begitu halaman dibuka.
+if (configError) {
+  $("result").textContent = configError;
+  $("result").className = "result warn";
 }
