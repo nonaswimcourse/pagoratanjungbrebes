@@ -30,7 +30,14 @@
       <div class="card">
         <h2>Scan QR Code</h2>
         <p class="muted">Izinkan kamera ketika diminta. Arahkan QR peserta ke kamera.</p>
-        <div id="reader"></div>
+        <div class="reader-wrap">
+          <div id="reader"></div>
+          <div id="scanOverlay" class="scan-overlay">
+            <div class="scan-overlay-icon"></div>
+            <div class="scan-overlay-title"></div>
+            <div class="scan-overlay-sub"></div>
+          </div>
+        </div>
         <div id="result" class="result">Menunggu scan...</div>
         <button id="startScan" class="primary">Mulai Kamera</button>
         <button id="stopScan" class="secondary">Matikan Kamera</button>

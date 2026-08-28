@@ -248,7 +248,9 @@ $("fotoFile").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   try {
-    pendingFotoDataUrl = await compressImageFile(file, 480, 0.82, { preserveTransparency: true });
+    // maxDim dinaikkan (480 -> 960) supaya foto tetap tajam/HD saat dicetak
+    // besar di Kartu ID, bukan buram karena diperbesar dari resolusi kecil.
+    pendingFotoDataUrl = await compressImageFile(file, 960, 0.9, { preserveTransparency: true });
     $("fotoPreview").src = pendingFotoDataUrl;
     $("fotoPreviewRow").hidden = false;
   } catch (err) {
@@ -300,25 +302,66 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Tinggi header navy di bagian atas kartu. Dibuat sebagai blok rapi (bukan
-// pita bergelombang seperti versi sebelumnya) supaya area logo & judul
-// pasti tersedia dan tidak pernah tertimpa/terpotong elemen lain.
-const CARD_HEADER_H = 180;
-
-function drawCardBackground(ctx, w, h) {
-  const NAVY = "#123fa8";
+// ============ DEKORASI GELOMBANG SUDUT (gaya biru-kuning modern) ============
+// Menggambar satu "gelombang" dekoratif di salah satu sudut kartu (navy +
+// biru muda + garis aksen oranye). Dipanggil 4x (tiap sudut) dengan
+// flip/translate berbeda supaya kodenya tidak diulang-ulang.
+function drawCornerWave(ctx, W, H, flipX, flipY, big) {
+  const NAVY = "#0f2f8c";
+  const BLUE = "#2f7bd8";
   const ORANGE = "#f7a823";
 
+  ctx.save();
+  ctx.translate(flipX ? W : 0, flipY ? H : 0);
+  ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+
+  const aw = big ? W * 0.58 : W * 0.28;
+  const ah = big ? H * 0.15 : H * 0.065;
+
+  // --- gumpalan navy (lapisan belakang) ---
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, ah * 1.4);
+  ctx.bezierCurveTo(aw * 0.18, ah * 1.15, aw * 0.28, ah * 0.35, aw * 0.52, ah * 0.45);
+  ctx.bezierCurveTo(aw * 0.74, ah * 0.55, aw * 0.86, ah * 0.05, aw, 0);
+  ctx.closePath();
+  ctx.fillStyle = NAVY;
+  ctx.fill();
+
+  // --- gumpalan biru muda (lapisan depan, lebih pendek) ---
+  ctx.beginPath();
+  ctx.moveTo(0, ah * 0.55);
+  ctx.bezierCurveTo(aw * 0.12, ah * 0.45, aw * 0.20, ah * 0.05, aw * 0.38, ah * 0.12);
+  ctx.bezierCurveTo(aw * 0.52, ah * 0.17, aw * 0.58, 0, aw * 0.74, 0);
+  ctx.lineTo(0, 0);
+  ctx.closePath();
+  ctx.fillStyle = BLUE;
+  ctx.fill();
+
+  // --- garis aksen oranye mengikuti tepi gelombang ---
+  ctx.beginPath();
+  ctx.moveTo(0, ah * 0.68);
+  ctx.bezierCurveTo(aw * 0.14, ah * 0.55, aw * 0.24, ah * 0.14, aw * 0.44, ah * 0.20);
+  ctx.bezierCurveTo(aw * 0.60, ah * 0.25, aw * 0.68, ah * 0.02, aw * 0.86, -ah * 0.02);
+  ctx.lineWidth = Math.max(6, aw * 0.02);
+  ctx.lineCap = "round";
+  ctx.strokeStyle = ORANGE;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawCardBackground(ctx, w, h) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
-  // --- header navy rapi ---
-  ctx.fillStyle = NAVY;
-  ctx.fillRect(0, 0, w, CARD_HEADER_H);
-
-  // --- garis aksen oranye pemisah header ---
-  ctx.fillStyle = ORANGE;
-  ctx.fillRect(0, CARD_HEADER_H, w, 8);
+  // Latar putih penuh + gelombang dekoratif di 4 sudut (besar di kiri,
+  // kecil di kanan — meniru gaya kartu ID biru-kuning modern), bukan lagi
+  // blok header navy solid seperti versi sebelumnya.
+  drawCornerWave(ctx, w, h, false, false, true);  // kiri atas (besar)
+  drawCornerWave(ctx, w, h, true, false, false);  // kanan atas (kecil)
+  drawCornerWave(ctx, w, h, false, true, true);   // kiri bawah (besar)
+  drawCornerWave(ctx, w, h, true, true, false);   // kanan bawah (kecil)
 }
 
 async function renderIdCard(p, settings) {
@@ -329,9 +372,9 @@ async function renderIdCard(p, settings) {
 
   drawCardBackground(ctx, W, H);
 
-  // --- logo (lingkaran putih di header, selalu digambar sebagai bingkai
-  // meski logo belum diisi, supaya header tetap rapi) ---
-  const logoCx = W / 2, logoCy = 88, logoR = 66;
+  // --- logo (lingkaran putih di area tengah-atas, selalu digambar sebagai
+  // bingkai meski logo belum diisi, supaya tetap rapi) ---
+  const logoCx = W / 2, logoCy = 160, logoR = 64;
   ctx.save();
   ctx.beginPath();
   ctx.arc(logoCx, logoCy, logoR, 0, Math.PI * 2);
@@ -363,7 +406,7 @@ async function renderIdCard(p, settings) {
     }
   }
 
-  let cursorY = CARD_HEADER_H + 8 + 32;
+  let cursorY = logoCy + logoR + 46;
 
   // --- judul ---
   ctx.textAlign = "center";
@@ -375,32 +418,35 @@ async function renderIdCard(p, settings) {
     cursorY += 40;
   });
 
-  // --- sub-judul ---
-  cursorY += 6;
-  ctx.fillStyle = "#4a4a4a";
-  ctx.font = "bold 20px Arial, sans-serif";
+  // --- sub-judul (hitam tebal, senada dengan versi cetak KKG) ---
+  cursorY += 8;
+  ctx.fillStyle = "#1a1a1a";
+  ctx.font = "bold 22px Arial, sans-serif";
   const subLines = wrapLines(ctx, settings.subjudul || "", W - 80);
   subLines.forEach(line => {
     ctx.fillText(line, W / 2, cursorY);
-    cursorY += 26;
+    cursorY += 28;
   });
 
-  // --- QR code ---
+  cursorY += 26;
+
+  // --- QR code (rata kiri, bukan di tengah, supaya foto peserta dapat
+  // ruang lebih besar di sisi kanan seperti pada desain acuan) ---
   // Dibungkus kotak putih berbingkai tipis supaya kontras & gampang dipindai,
   // dan digambar langsung pada ukuran akhirnya (bukan diperbesar dari ukuran
   // kecil seperti sebelumnya) supaya hasilnya TAJAM, tidak buram.
-  cursorY += 16;
-  const qrSize = 260;
-  const qrBoxPad = 16;
+  const qrMarginX = 46;
+  const qrSize = 220;
+  const qrBoxPad = 14;
   const qrBoxSize = qrSize + qrBoxPad * 2;
-  const qrBoxX = W / 2 - qrBoxSize / 2;
+  const qrBoxX = qrMarginX;
   const qrBoxY = cursorY;
   ctx.fillStyle = "#ffffff";
-  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 18);
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16);
   ctx.fill();
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#d8dce8";
-  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 18);
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16);
   ctx.stroke();
 
   const tmp = document.createElement("div");
@@ -414,66 +460,45 @@ async function renderIdCard(p, settings) {
     document.body.removeChild(tmp);
   }
 
-  // --- badge nama + sekolah ---
-  const badgeY = qrBoxY + qrBoxSize + 18;
-  const badgeH = 88;
-  const badgeW = W - 90;
-  const badgeX = 45;
+  // --- foto peserta (kanan, besar, menyentuh tepi kanan & bawah kartu) ---
+  // Area dihitung SEBELUM teks nama/sekolah supaya lebar teks bisa
+  // menghindari tumpang tindih dengan foto.
+  const areaW = W * 0.50;
+  const areaX = W - areaW;
+  const areaTop = qrBoxY;
+  const areaH = H - areaTop;
+
+  // --- nama & asal sekolah (rata kiri, langsung di atas latar putih,
+  // tanpa "pil" warna seperti versi sebelumnya — meniru desain acuan) ---
+  const textX = qrBoxX;
+  const textMaxWidth = areaX - textX - 16;
+  let textY = qrBoxY + qrBoxSize + 40;
+
+  ctx.textAlign = "left";
   ctx.fillStyle = "#123fa8";
-  roundRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
-  ctx.fill();
+  ctx.font = "bold 20px Arial, sans-serif";
+  const namaLines = wrapLines(ctx, p.nama.toUpperCase(), textMaxWidth);
+  namaLines.forEach(line => {
+    ctx.fillText(line, textX, textY);
+    textY += 26;
+  });
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 26px Arial, sans-serif";
-  ctx.fillText(p.nama.toUpperCase(), W / 2, badgeY + 38);
-  ctx.font = "20px Arial, sans-serif";
-  ctx.fillText((p.asal_sekolah || "-").toUpperCase(), W / 2, badgeY + 68);
-
-  // --- panel bawah (latar lembut penuh lebar) ---
-  // Memberi "bingkai" visual untuk area foto supaya ruang di sisi kiri tidak
-  // terasa seperti sisa kosong tak sengaja, sekaligus jadi tempat foto
-  // peserta yang jauh lebih besar dari versi sebelumnya.
-  const panelTop = badgeY + badgeH + 16;
-  ctx.fillStyle = "#eef1fb";
-  ctx.fillRect(0, panelTop, W, H - panelTop);
-  ctx.fillStyle = "#f7a823";
-  ctx.fillRect(20, panelTop + 14, W - 40, 4);
-
-  ctx.fillStyle = "#123fa8";
-  ctx.beginPath();
-  ctx.arc(90, panelTop + 70, 26, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#f7a823";
-  ctx.beginPath();
-  ctx.arc(65, panelTop + 120, 12, 0, Math.PI * 2);
-  ctx.fill();
-
+  textY += 6;
+  ctx.fillStyle = "#1a1a1a";
   ctx.font = "bold 15px Arial, sans-serif";
-  const vLabel = "KARTU TANDA PESERTA";
-  const vLabelWidth = ctx.measureText(vLabel).width;
-  if (vLabelWidth + 40 < H - panelTop) {
-    ctx.save();
-    ctx.translate(55, H - 20);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#123fa8";
-    ctx.fillText(vLabel, 0, 0);
-    ctx.restore();
-  }
+  const sekolahLines = wrapLines(ctx, (p.asal_sekolah || "-").toUpperCase(), textMaxWidth);
+  sekolahLines.forEach(line => {
+    ctx.fillText(line, textX, textY);
+    textY += 20;
+  });
 
-  // --- foto peserta (pojok kanan bawah) ---
-  // Area foto diperbesar signifikan dan sisi bawah/kanannya sengaja dibuat
-  // menyentuh tepi kartu (tanpa margin) — bukan "cover" yang memotong foto,
-  // tetap "contain" supaya foto tidak terpotong, hanya diperbesar sepenuhnya
-  // sampai menyentuh batas bawah kartu.
+  // Foto digambar PALING TERAKHIR (di atas segalanya) supaya menutupi sisa
+  // gelombang dekoratif pojok kanan-bawah secara alami, persis seperti pada
+  // desain acuan. Mode "contain" (bukan "cover") supaya foto tidak pernah
+  // terpotong, hanya diperbesar sepenuhnya sampai menyentuh tepi kartu.
   if (p.foto) {
     try {
       const img = await loadImage(p.foto);
-      const areaW = W * 0.58;
-      const areaX = W - areaW;
-      const areaTop = panelTop;
-      const areaH = H - areaTop;
-
       const ratio = Math.min(areaW / img.width, areaH / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
       const drawX = areaX + (areaW - iw);   // rata kanan, menyentuh tepi kartu
@@ -650,7 +675,9 @@ async function loadParticipants() {
         btnSave.textContent = "Memproses foto...";
         btnSave.disabled = true;
         try {
-          payload.foto = await compressImageFile(fotoFile, 480, 0.82, { preserveTransparency: true });
+          // maxDim dinaikkan (480 -> 960) supaya foto tetap tajam/HD saat
+          // dicetak besar di Kartu ID.
+          payload.foto = await compressImageFile(fotoFile, 960, 0.9, { preserveTransparency: true });
         } catch (err) {
           btnSave.textContent = "💾 Simpan";
           btnSave.disabled = false;
@@ -846,8 +873,37 @@ $("importTextBtn").addEventListener("click", async () => {
 
 // ============ SCAN ============
 
+// ============ OVERLAY CEKLIS DI TENGAH AREA SCAN ============
+// Muncul sesaat menimpa tampilan kamera supaya petugas langsung tahu
+// hasil scan tanpa harus melirik ke bawah, lalu hilang otomatis.
+let scanOverlayTimer = null;
+
+const SCAN_ICONS = {
+  ok: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 17h.01" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.6 3.9 2.4 18a1.6 1.6 0 0 0 1.4 2.4h16.4a1.6 1.6 0 0 0 1.4-2.4L13.4 3.9a1.6 1.6 0 0 0-2.8 0Z" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>',
+  bad: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>'
+};
+
+function showScanOverlay(type, title, sub = "") {
+  const el = $("scanOverlay");
+  if (!el) return;
+  clearTimeout(scanOverlayTimer);
+  el.querySelector(".scan-overlay-icon").innerHTML = SCAN_ICONS[type] || SCAN_ICONS.bad;
+  el.querySelector(".scan-overlay-title").textContent = title;
+  el.querySelector(".scan-overlay-sub").textContent = sub;
+  el.className = "scan-overlay show " + type;
+  scanOverlayTimer = setTimeout(() => hideScanOverlay(), 2200);
+}
+
+function hideScanOverlay() {
+  const el = $("scanOverlay");
+  if (!el) return;
+  el.className = "scan-overlay";
+}
+
 async function startScanner() {
   if (scanning) return;
+  hideScanOverlay();
   $("result").textContent = "Membuka kamera...";
   scanner = new Html5Qrcode("reader");
   try {
@@ -868,6 +924,7 @@ async function stopScanner() {
   if (!scanner || !scanning) return;
   try { await scanner.stop(); scanner.clear(); } catch {}
   scanning = false;
+  hideScanOverlay();
   $("result").textContent = "Kamera dimatikan.";
 }
 
@@ -880,8 +937,14 @@ async function handleScan(code) {
   const { data: peserta, error } = await db
     .from("peserta").select("*").eq("kode_qr", code).maybeSingle();
 
-  if (error) return showResult("Gagal membaca data peserta: " + error.message, "bad");
-  if (!peserta) return showResult("QR tidak terdaftar.", "bad");
+  if (error) {
+    showScanOverlay("bad", "GAGAL", "Gagal membaca data peserta.");
+    return showResult("Gagal membaca data peserta: " + error.message, "bad");
+  }
+  if (!peserta) {
+    showScanOverlay("bad", "TIDAK TERDAFTAR", "QR tidak dikenali.");
+    return showResult("QR tidak terdaftar.", "bad");
+  }
 
   const today = new Date().toISOString().slice(0,10);
   const { data: existing } = await db
@@ -889,6 +952,7 @@ async function handleScan(code) {
     .eq("peserta_id", peserta.id).eq("tanggal", today).maybeSingle();
 
   if (existing) {
+    showScanOverlay("warn", "SUDAH ABSEN", `${peserta.nama} — ${existing.jam}`);
     return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${existing.jam}`, "warn");
   }
 
@@ -897,7 +961,11 @@ async function handleScan(code) {
     tanggal: today
   });
 
-  if (insertError) return showResult("Gagal menyimpan: " + insertError.message, "bad");
+  if (insertError) {
+    showScanOverlay("bad", "GAGAL", "Gagal menyimpan kehadiran.");
+    return showResult("Gagal menyimpan: " + insertError.message, "bad");
+  }
+  showScanOverlay("ok", "ABSENSI BERHASIL", `${peserta.nama}${peserta.asal_sekolah ? " — " + peserta.asal_sekolah : ""}`);
   showResult(`✅ ABSEN BERHASIL<br><b>${esc(peserta.nama)}</b><br>${esc(peserta.asal_sekolah || "-")}`, "ok");
   loadAttendance();
 }

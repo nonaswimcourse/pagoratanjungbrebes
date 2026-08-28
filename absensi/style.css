@@ -24,6 +24,38 @@ textarea{resize:vertical}
 .result.warn{background:#fff4d6}
 .result.bad{background:#ffe7e7}
 
+/* --- Overlay ceklis di tengah area kamera saat scan berhasil/gagal --- */
+.reader-wrap{position:relative;max-width:520px;margin:14px auto}
+.reader-wrap #reader{margin:0}
+.scan-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  background:rgba(255,255,255,.94);border-radius:12px;
+  opacity:0;pointer-events:none;transform:scale(.96);
+  transition:opacity .18s ease,transform .18s ease;
+  z-index:5;padding:16px;text-align:center;
+}
+.scan-overlay.show{opacity:1;transform:scale(1)}
+.scan-overlay-icon{
+  width:84px;height:84px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  animation:scanPop .32s ease;
+}
+.scan-overlay-icon svg{width:46px;height:46px}
+.scan-overlay-title{font-size:19px;font-weight:800}
+.scan-overlay-sub{font-size:14px;color:#3a4252;line-height:1.5}
+.scan-overlay.ok .scan-overlay-icon{background:#1ecb6b}
+.scan-overlay.ok .scan-overlay-title{color:#1a8f4c}
+.scan-overlay.warn .scan-overlay-icon{background:#f2a90a}
+.scan-overlay.warn .scan-overlay-title{color:#9a6b00}
+.scan-overlay.bad .scan-overlay-icon{background:#e0363f}
+.scan-overlay.bad .scan-overlay-title{color:#b00020}
+@keyframes scanPop{
+  0%{transform:scale(.4);opacity:0}
+  60%{transform:scale(1.12);opacity:1}
+  100%{transform:scale(1)}
+}
+
 /* --- Daftar peserta: layout rapi (QR | mini kartu ID | info | aksi) --- */
 .participant{
   display:grid;
