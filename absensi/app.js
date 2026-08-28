@@ -205,7 +205,7 @@ $("rekapSettingsSave").addEventListener("click", () => {
 
 // ============ FOTO PESERTA (dikompres jadi JPEG kecil, disimpan sebagai base64) ============
 
-function compressImageFile(file, maxDim = 480, quality = 0.82) {
+function compressImageFile(file, maxDim = 480, quality = 0.82, { preserveTransparency = false } = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -218,12 +218,19 @@ function compressImageFile(file, maxDim = 480, quality = 0.82) {
         const canvas = document.createElement("canvas");
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext("2d");
-        // Isi latar putih dulu supaya PNG transparan (mis. hasil scan tanda tangan)
-        // tidak berubah jadi hitam saat dikompres ke JPEG (JPEG tidak mendukung alpha).
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        if (preserveTransparency) {
+          // Foto peserta: biarkan transparan apa adanya (tanpa latar/pembungkus warna),
+          // disimpan sebagai PNG supaya alpha channel-nya tetap ada di Kartu ID.
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/png"));
+        } else {
+          // Isi latar putih dulu supaya PNG transparan (mis. hasil scan tanda tangan)
+          // tidak berubah jadi hitam saat dikompres ke JPEG (JPEG tidak mendukung alpha).
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        }
       };
       img.onerror = () => reject(new Error("Gagal memuat foto."));
       img.src = reader.result;
@@ -239,7 +246,7 @@ $("fotoFile").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   try {
-    pendingFotoDataUrl = await compressImageFile(file);
+    pendingFotoDataUrl = await compressImageFile(file, 480, 0.82, { preserveTransparency: true });
     $("fotoPreview").src = pendingFotoDataUrl;
     $("fotoPreviewRow").hidden = false;
   } catch (err) {
@@ -438,54 +445,29 @@ async function renderIdCard(p, settings) {
   ctx.font = "20px Arial, sans-serif";
   ctx.fillText((p.asal_sekolah || "-").toUpperCase(), W / 2, badgeY + 76);
 
-  // --- foto peserta (pojok kanan bawah, di bawah badge, gaya kartu contoh) ---
+  // --- foto peserta (pojok kanan bawah, di bawah badge) ---
+  // Tanpa pembungkus/frame apa pun: foto (PNG transparan) ditempel apa adanya
+  // sesuai bentuk aslinya, hanya dibatasi area yang tersedia (contain, bukan
+  // dipotong ke dalam kotak) supaya tidak ada latar atau garis pembungkus.
   if (p.foto) {
     try {
       const img = await loadImage(p.foto);
-      const photoW = W * 0.42;
-      const photoY = badgeY + badgeH + 15;
-      const photoH = H - photoY;
-      const photoX = W - photoW;
-      const r = 40;
+      const areaW = W * 0.42;
+      const areaX = W - areaW - 20;
+      const areaTop = badgeY + badgeH + 15;
+      const areaH = H - 20 - areaTop;
 
-      ctx.save();
-      photoClipPath(ctx, photoX, photoY, photoW, photoH, r);
-      ctx.clip();
-      // Skala foto agar menutupi seluruh kotak (cover), lalu sejajarkan ke ATAS
-      // (bukan ke tengah) supaya kepala tidak terpotong — hasilnya foto tampil
-      // dari atas kepala sampai kira-kira setengah badan, bukan hanya wajah close-up.
-      const ratio = Math.max(photoW / img.width, photoH / img.height);
+      const ratio = Math.min(areaW / img.width, areaH / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
-      const drawX = photoX + photoW / 2 - iw / 2; // tengah secara horizontal
-      const drawY = photoY;                        // rata atas secara vertikal
+      const drawX = areaX + (areaW - iw);   // rata kanan
+      const drawY = areaTop + (areaH - ih); // rata bawah
       ctx.drawImage(img, drawX, drawY, iw, ih);
-      ctx.restore();
-
-      ctx.save();
-      photoClipPath(ctx, photoX, photoY, photoW, photoH, r);
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = "#ffffff";
-      ctx.stroke();
-      ctx.restore();
     } catch (err) {
       console.error("Gagal memuat foto peserta di kartu:", err);
     }
   }
 
   return canvas;
-}
-
-// Bentuk kotak foto: hanya sudut kiri-atas melengkung, sisi kanan & bawah rata
-// dengan tepi kartu (meniru gaya kartu ID pada contoh yang diberikan).
-function photoClipPath(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w, y);
-  ctx.lineTo(x + w, y + h);
-  ctx.lineTo(x, y + h);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
 }
 
 function downloadCanvas(canvas, filename) {
@@ -651,7 +633,7 @@ async function loadParticipants() {
         btnSave.textContent = "Memproses foto...";
         btnSave.disabled = true;
         try {
-          payload.foto = await compressImageFile(fotoFile);
+          payload.foto = await compressImageFile(fotoFile, 480, 0.82, { preserveTransparency: true });
         } catch (err) {
           btnSave.textContent = "💾 Simpan";
           btnSave.disabled = false;
@@ -1055,7 +1037,7 @@ $("downloadRekapPdf").addEventListener("click", () => {
       fileTag = selectedTanggal;
     }
 
-    let y = 15;
+    let y = 12;
 
     if (cardSettings.logo) {
       try {
@@ -1063,7 +1045,7 @@ $("downloadRekapPdf").addEventListener("click", () => {
         const logoW = 18;
         const logoH = (props.height / props.width) * logoW;
         doc.addImage(cardSettings.logo, imageFormatFromDataUrl(cardSettings.logo), pageW / 2 - logoW / 2, y, logoW, logoH);
-        y += logoH + 4;
+        y += logoH + 1.5;
       } catch (err) {
         console.error("Gagal menambahkan logo ke PDF:", err);
       }
@@ -1072,8 +1054,9 @@ $("downloadRekapPdf").addEventListener("click", () => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.text((rekapSettings.judul || defaultRekapSettings.judul).toUpperCase(), pageW / 2, y, { align: "center" });
-    y += 6;
-    doc.text(`KECAMATAN ${(rekapSettings.kecamatan || "-").toUpperCase()} — ${agendaLabel}`, pageW / 2, y, { align: "center" });
+    y += 5.5;
+    doc.setFontSize(11);
+    doc.text(`KECAMATAN ${(rekapSettings.kecamatan || "-").toUpperCase()} ${agendaLabel}`, pageW / 2, y, { align: "center" });
     y += 8;
 
     doc.autoTable({
@@ -1091,7 +1074,7 @@ $("downloadRekapPdf").addEventListener("click", () => {
       margin: { left: 15, right: 15 }
     });
 
-    let finalY = doc.lastAutoTable.finalY + 20;
+    let finalY = doc.lastAutoTable.finalY + 12;
     if (finalY > 260) { doc.addPage(); finalY = 20; }
 
     const signX = pageW - 70;
@@ -1101,24 +1084,27 @@ $("downloadRekapPdf").addEventListener("click", () => {
     doc.text("Ketua KKG PJOK", signX, finalY + 6);
 
     // Tanda tangan (gambar hasil upload) ditempel di antara "Ketua KKG PJOK"
-    // dan nama, menggantikan area kosong yang biasanya ditandatangani manual.
+    // dan nama. Jarak ke nama menyesuaikan tinggi gambar tanda tangan supaya
+    // tidak ada ruang kosong berlebih (tetap rapat & rapi kalau tidak ada tanda tangan).
+    let namaY = finalY + 20;
     if (rekapSettings.tandaTangan) {
       try {
         const props = doc.getImageProperties(rekapSettings.tandaTangan);
-        const ttdW = 32;
+        const ttdW = 28;
         const ttdH = (props.height / props.width) * ttdW;
-        doc.addImage(rekapSettings.tandaTangan, imageFormatFromDataUrl(rekapSettings.tandaTangan), signX, finalY + 9, ttdW, ttdH);
+        const ttdY = finalY + 7;
+        doc.addImage(rekapSettings.tandaTangan, imageFormatFromDataUrl(rekapSettings.tandaTangan), signX, ttdY, ttdW, ttdH);
+        namaY = ttdY + ttdH + 5;
       } catch (err) {
         console.error("Gagal menambahkan tanda tangan ke PDF:", err);
       }
     }
 
-    finalY += 28;
     doc.setFont("helvetica", "bold");
-    doc.text(rekapSettings.namaKetua || "-", signX, finalY);
+    doc.text(rekapSettings.namaKetua || "-", signX, namaY);
     if (rekapSettings.nipKetua) {
       doc.setFont("helvetica", "normal");
-      doc.text(`NIP.${rekapSettings.nipKetua}`, signX, finalY + 6);
+      doc.text(`NIP.${rekapSettings.nipKetua}`, signX, namaY + 6);
     }
 
     doc.save(`Rekap_Kehadiran_${fileTag}.pdf`);
