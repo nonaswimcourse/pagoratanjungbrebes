@@ -1061,7 +1061,7 @@ function applyAttendanceFilter() {
   } else {
     box.innerHTML = attendanceFiltered.map((x, i) => `
       <tr><td>${i + 1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
-      <td>${x.tanggal}</td><td>${jamPendek(x.jam)}</td></tr>`).join("");
+      <td>${esc(formatTanggalPendek(x.tanggal))}</td><td>${jamPendek(x.jam)}</td></tr>`).join("");
   }
   $("stats").innerHTML = `<div><b>${attendanceFiltered.length}</b><span>Total scan${selected !== "semua" ? " (tanggal ini)" : ""}</span></div>`;
 }
@@ -1193,7 +1193,7 @@ $("downloadRekapPdf").addEventListener("click", () => {
         i + 1,
         x.peserta?.nama || "-",
         x.peserta?.asal_sekolah || "-",
-        x.tanggal || "-",
+        formatTanggalPendek(x.tanggal) || "-",
         jamPendek(x.jam)
       ]),
       styles: { font: "helvetica", fontSize: 10, cellPadding: 2.2 },
