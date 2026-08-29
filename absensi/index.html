@@ -39,19 +39,38 @@
 
     <div class="row">
       <div>
-        <h1>ABSENSI QR</h1>
+        <h1 id="headerAppTitle">ABSENSI QR</h1>
         <p>Scan QR Code dengan kamera HP</p>
       </div>
     </div>
 
     <div id="profileMenu" class="profile-menu" hidden>
       <div class="profile-menu-header">
-        <div class="app-logo-badge">AQ</div>
+        <button type="button" class="app-logo-badge" id="appLogoBadge" title="Klik untuk ubah logo aplikasi">
+          <span id="appLogoBadgeText">AQ</span>
+          <img id="appLogoBadgeImg" alt="Logo aplikasi" hidden>
+        </button>
         <div class="profile-menu-info">
-          <div class="profile-menu-app">Absensi QR</div>
+          <div class="profile-menu-app" id="profileMenuAppName">Absensi QR</div>
           <div class="profile-menu-user" id="profileUserEmail"></div>
         </div>
+        <button type="button" class="profile-edit-btn" id="appIdentityEditBtn" title="Ubah logo &amp; nama aplikasi">✏️</button>
       </div>
+      <input type="file" id="appLogoFile" accept="image/*" hidden>
+
+      <div id="appIdentityBox" class="import-box" hidden>
+        <label class="field-label">Nama Aplikasi</label>
+        <input id="appNameInput" placeholder="Nama aplikasi (mis. Absensi QR)">
+        <div class="row" id="appLogoClearRow" style="margin-top:8px" hidden>
+          <button type="button" class="secondary" id="appLogoClearBtn">🗑 Hapus Logo</button>
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:12px">Tips: klik ikon logo di atas untuk ganti gambar logo.</p>
+        <div class="row" style="margin-top:10px;gap:8px">
+          <button type="button" class="secondary" id="appIdentityCancel">Batal</button>
+          <button type="button" class="primary" id="appIdentitySave">Simpan</button>
+        </div>
+      </div>
+
       <button type="button" class="danger profile-logout-btn" id="logoutBtn">🚪 Logout</button>
     </div>
   </header>

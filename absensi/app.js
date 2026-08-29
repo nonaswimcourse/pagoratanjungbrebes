@@ -95,6 +95,147 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeProfileMenu();
 });
 
+// ============ IDENTITAS APLIKASI (logo & nama, bisa diubah lewat menu Profil) ============
+// Sama seperti Pengaturan Kartu ID: disimpan ke tabel "pengaturan" (kunci "aplikasi")
+// supaya logo & nama yang diubah di satu perangkat langsung ikut di perangkat lain.
+const appLogoBadge = $("appLogoBadge");
+const appLogoBadgeText = $("appLogoBadgeText");
+const appLogoBadgeImg = $("appLogoBadgeImg");
+const appLogoFile = $("appLogoFile");
+const profileMenuAppName = $("profileMenuAppName");
+const appIdentityEditBtn = $("appIdentityEditBtn");
+const appIdentityBox = $("appIdentityBox");
+const appNameInput = $("appNameInput");
+const appLogoClearRow = $("appLogoClearRow");
+const appLogoClearBtn = $("appLogoClearBtn");
+const appIdentitySave = $("appIdentitySave");
+const appIdentityCancel = $("appIdentityCancel");
+const headerAppTitle = $("headerAppTitle");
+
+const APP_IDENTITY_KEY = "absensiAppIdentity";
+const DEFAULT_APP_IDENTITY = { nama: "Absensi QR", logo: null };
+
+function loadAppIdentity() {
+  try {
+    const raw = localStorage.getItem(APP_IDENTITY_KEY);
+    if (raw) return { ...DEFAULT_APP_IDENTITY, ...JSON.parse(raw) };
+  } catch (err) { /* abaikan, pakai default */ }
+  return { ...DEFAULT_APP_IDENTITY };
+}
+function saveAppIdentityToStorage(identity) {
+  localStorage.setItem(APP_IDENTITY_KEY, JSON.stringify(identity));
+}
+
+let appIdentity = loadAppIdentity();
+// undefined = logo belum diubah pengguna di form ini, null = pengguna menghapus logo,
+// string (data URL) = logo baru yang baru dipilih tapi belum disimpan.
+let pendingAppLogo = undefined;
+
+function initialsFromName(nama) {
+  const words = (nama || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "AQ";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+function renderAppIdentity() {
+  const nama = (appIdentity.nama || DEFAULT_APP_IDENTITY.nama).trim() || DEFAULT_APP_IDENTITY.nama;
+  profileMenuAppName.textContent = nama;
+  if (headerAppTitle) headerAppTitle.textContent = nama;
+  document.title = nama;
+  if (appIdentity.logo) {
+    appLogoBadgeImg.src = appIdentity.logo;
+    appLogoBadgeImg.hidden = false;
+    appLogoBadgeText.hidden = true;
+    appLogoClearRow.hidden = false;
+  } else {
+    appLogoBadgeImg.hidden = true;
+    appLogoBadgeImg.src = "";
+    appLogoBadgeText.hidden = false;
+    appLogoBadgeText.textContent = initialsFromName(nama);
+    appLogoClearRow.hidden = true;
+  }
+}
+renderAppIdentity();
+
+function applyRemoteAppIdentity(nilai) {
+  appIdentity = { ...DEFAULT_APP_IDENTITY, ...nilai };
+  saveAppIdentityToStorage(appIdentity);
+  // Kalau form edit sedang terbuka, jangan timpa apa yang lagi diketik pengguna.
+  if (appIdentityBox.hidden) renderAppIdentity();
+}
+
+function openAppIdentityBox() {
+  appNameInput.value = appIdentity.nama || "";
+  pendingAppLogo = undefined;
+  appIdentityBox.hidden = false;
+}
+function closeAppIdentityBox() {
+  appIdentityBox.hidden = true;
+  pendingAppLogo = undefined;
+  appLogoFile.value = "";
+  renderAppIdentity(); // kembalikan badge ke versi tersimpan kalau tadi sempat diubah tapi dibatalkan
+}
+
+appLogoBadge.addEventListener("click", (e) => {
+  e.stopPropagation();
+  appLogoFile.click();
+});
+
+appLogoFile.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingAppLogo = reader.result;
+    appLogoBadgeImg.src = reader.result;
+    appLogoBadgeImg.hidden = false;
+    appLogoBadgeText.hidden = true;
+    appLogoClearRow.hidden = false;
+    openAppIdentityBox(); // otomatis buka form supaya nama & tombol Simpan langsung kelihatan
+  };
+  reader.readAsDataURL(file);
+});
+
+appLogoClearBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  pendingAppLogo = null;
+  appLogoFile.value = "";
+  appLogoBadgeImg.hidden = true;
+  appLogoBadgeText.hidden = false;
+  appLogoBadgeText.textContent = initialsFromName(appNameInput.value || appIdentity.nama);
+  appLogoClearRow.hidden = true;
+});
+
+appIdentityEditBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (appIdentityBox.hidden) openAppIdentityBox(); else closeAppIdentityBox();
+});
+
+appIdentityCancel.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeAppIdentityBox();
+});
+
+appIdentitySave.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  const namaBaru = appNameInput.value.trim() || DEFAULT_APP_IDENTITY.nama;
+  const logoBaru = pendingAppLogo === undefined ? appIdentity.logo : pendingAppLogo;
+  appIdentity = { nama: namaBaru, logo: logoBaru };
+  saveAppIdentityToStorage(appIdentity);
+  renderAppIdentity();
+  pendingAppLogo = undefined;
+  appIdentityBox.hidden = true;
+  appIdentitySave.disabled = true;
+  appIdentitySave.textContent = "Menyimpan...";
+  try {
+    await savePengaturanRemote("aplikasi", appIdentity);
+  } finally {
+    appIdentitySave.disabled = false;
+    appIdentitySave.textContent = "Simpan";
+  }
+});
+
 function showAuthMsg(text, type = "bad") {
   authMsg.hidden = false;
   authMsg.textContent = text;
@@ -284,6 +425,9 @@ function subscribeRealtimeSettings() {
       .on("postgres_changes",
         { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.rekap" },
         (payload) => { if (payload.new && payload.new.nilai) applyRemoteRekapSettings(payload.new.nilai); })
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.aplikasi" },
+        (payload) => { if (payload.new && payload.new.nilai) applyRemoteAppIdentity(payload.new.nilai); })
       .subscribe();
     settingsRealtimeSubscribed = true;
   } catch (err) {
@@ -294,12 +438,14 @@ function subscribeRealtimeSettings() {
 // Dipanggil sekali tiap kali login berhasil: tarik versi TERBARU dari server (siapa tahu
 // tadi diubah dari perangkat lain saat kita offline/belum login), lalu pasang realtime.
 async function loadRemoteSettingsAndSubscribe() {
-  const [remoteCard, remoteRekap] = await Promise.all([
+  const [remoteCard, remoteRekap, remoteIdentity] = await Promise.all([
     fetchPengaturanRemote("kartu_id"),
     fetchPengaturanRemote("rekap"),
+    fetchPengaturanRemote("aplikasi"),
   ]);
   if (remoteCard) applyRemoteCardSettings(remoteCard, { rebuildEditor: false });
   if (remoteRekap) applyRemoteRekapSettings(remoteRekap);
+  if (remoteIdentity) applyRemoteAppIdentity(remoteIdentity);
   subscribeRealtimeSettings();
 }
 
