@@ -1639,7 +1639,11 @@ function getFormData(form, typeKey, existing = {}) {
         foto_name: prevLampiran.foto_name || ''
       };
     })()),
-    isi_surat: data.get('isi_surat')?.trim(),
+    // Surat Keluar memakai 2 kolom form (Paragraf Pembuka/Penutup) yang digabung di sini;
+    // jenis surat lain masih memakai 1 kolom "isi_surat" seperti semula.
+    isi_surat: (typeKey === 'keluar')
+      ? combineIsiSuratFromForm(data.get('isi_surat_pembuka'), data.get('isi_surat_penutup'))
+      : data.get('isi_surat')?.trim(),
     hari: data.get('hari')?.trim(),
     tanggal_kegiatan: data.get('tanggal_kegiatan')?.trim(),
     waktu: data.get('waktu')?.trim(),
@@ -2125,10 +2129,24 @@ function documentFormHTML(typeKey, row = {}, mode = 'create') {
           <label>Acara</label>
           <input name="acara" value="${safe(data.acara)}" placeholder="Contoh: Sosialisasi Hasil Coaching Clinic" ${disabled}>
         </div>
+        ${resolvedTypeKey === 'keluar' ? (() => {
+          const { pembuka, penutup } = splitIsiSuratForForm(data.isi_surat);
+          return `
+        <div class="field full">
+          <label>Paragraf Pembuka</label>
+          <textarea name="isi_surat_pembuka" rows="5" required placeholder="Tulis paragraf pembuka surat (alasan/maksud surat)." ${disabled}>${safe(pembuka)}</textarea>
+          <small class="field-hint">Tampil sebelum data kegiatan (Hari/Tanggal/Waktu/dst) jika diisi.</small>
+        </div>
+        <div class="field full">
+          <label>Paragraf Penutup</label>
+          <textarea name="isi_surat_penutup" rows="5" placeholder="Tulis paragraf penutup surat (harapan/ucapan terima kasih, dsb)." ${disabled}>${safe(penutup)}</textarea>
+          <small class="field-hint">Tampil setelah data kegiatan (Hari/Tanggal/Waktu/dst) jika diisi.</small>
+        </div>`;
+        })() : `
         <div class="field full">
           <label>Isi Surat / Ringkasan</label>
           <textarea name="isi_surat" rows="8" required placeholder="Tulis isi surat. Data kegiatan di atas akan tampil rapi dengan titik dua sejajar." ${disabled}>${safe(data.isi_surat)}</textarea>
-        </div>
+        </div>`}
         <div class="field full">
           <label>Catatan Internal</label>
           <textarea name="catatan" rows="3" placeholder="Catatan internal, disposisi, atau tindak lanjut" ${disabled}>${safe(data.catatan)}</textarea>
@@ -3148,6 +3166,23 @@ function splitParagraphBlocks(value) {
   const raw = String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const blocks = raw.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
   return blocks.length ? blocks : (raw.trim() ? [raw.trim()] : []);
+}
+
+// Memecah isi_surat (format lama, satu kolom) menjadi paragraf pembuka (blok pertama)
+// dan paragraf penutup (sisa blok) untuk mengisi 2 kolom form Paragraf Pembuka/Penutup,
+// supaya surat lama yang sudah tersimpan tetap tampil terpisah rapi saat dibuka/diedit.
+function splitIsiSuratForForm(isiSurat) {
+  const blocks = splitParagraphBlocks(isiSurat);
+  if (!blocks.length) return { pembuka: '', penutup: '' };
+  const [first, ...rest] = blocks;
+  return { pembuka: first, penutup: rest.join('\n\n') };
+}
+
+// Menggabungkan kembali Paragraf Pembuka + Paragraf Penutup menjadi satu nilai isi_surat
+// (dipisah baris kosong) agar tetap kompatibel dengan struktur data & rendering PDF/Word yang sudah ada.
+function combineIsiSuratFromForm(pembuka, penutup) {
+  const parts = [String(pembuka ?? '').trim(), String(penutup ?? '').trim()].filter(Boolean);
+  return parts.join('\n\n');
 }
 
 // === Lampiran daftar nama (tersedia untuk semua jenis surat) ===

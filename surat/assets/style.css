@@ -910,6 +910,13 @@ body.sidebar-hidden .content {
   grid-column: 1 / -1;
 }
 
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .form-actions {
   display: flex;
   flex-wrap: wrap;
