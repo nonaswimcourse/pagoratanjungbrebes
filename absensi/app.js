@@ -1181,6 +1181,41 @@ async function loadAttendance() {
   }
 }
 
+// ============ HAPUS DATA KEHADIRAN (untuk menghemat penyimpanan) ============
+// Menghapus baris di tabel "kehadiran" saja — data peserta (tabel "peserta")
+// tidak pernah ikut terhapus, jadi QR code peserta tetap bisa dipakai lagi nanti.
+async function deleteAttendanceRows(ids, { silent = false } = {}) {
+  if (!ids || !ids.length) return;
+  if (!requireDb()) return alert(configError);
+  const btn = $("deleteRekapBtn");
+  const originalLabel = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Menghapus..."; }
+  try {
+    const { error } = await db.from("kehadiran").delete().in("id", ids);
+    if (error) throw error;
+    if (!silent) alert(`Berhasil menghapus ${ids.length} data kehadiran.`);
+    await loadAttendance();
+  } catch (err) {
+    alert("Gagal menghapus data kehadiran: " + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+  }
+}
+
+$("deleteRekapBtn").addEventListener("click", async () => {
+  const rows = attendanceFiltered.length ? attendanceFiltered : attendanceData;
+  if (!rows.length) return alert("Tidak ada data kehadiran untuk dihapus.");
+  const selected = $("rekapDateFilter").value || "semua";
+  const label = selected === "semua" ? "SEMUA tanggal" : formatTanggalPendek(selected);
+  const ok = confirm(
+    `Hapus ${rows.length} data kehadiran untuk ${label}?\n\n` +
+    `Data peserta TIDAK ikut terhapus (hanya riwayat scan/absennya). ` +
+    `Tindakan ini tidak bisa dibatalkan — pastikan sudah unduh PDF-nya dulu kalau perlu arsipnya.`
+  );
+  if (!ok) return;
+  await deleteAttendanceRows(rows.map(r => r.id));
+});
+
 // Auto-refresh rekap kalau ada absen baru masuk secara realtime (mis. dari HP lain
 // yang sedang scan bersamaan), supaya tidak perlu klik Refresh terus-menerus.
 function subscribeRealtimeAttendance() {
@@ -1314,6 +1349,21 @@ $("downloadRekapPdf").addEventListener("click", () => {
     }
 
     doc.save(`Rekap_Kehadiran_${fileTag}.pdf`);
+
+    // Setelah PDF berhasil diunduh, tawarkan untuk mengosongkan data kehadiran
+    // yang baru saja diekspor supaya penyimpanan di Supabase tidak terus menumpuk.
+    // Kalau dipilih "Batal", data dibiarkan tetap ada seperti biasa.
+    const label = selectedTanggal === "semua" ? "SEMUA tanggal" : formatTanggalPendek(selectedTanggal);
+    const hapusIds = rows.map(r => r.id);
+    setTimeout(() => {
+      const hapus = confirm(
+        `PDF berhasil diunduh.\n\n` +
+        `Hapus ${hapusIds.length} data kehadiran untuk ${label} dari database sekarang, ` +
+        `agar hemat penyimpanan? Data peserta tidak akan terpengaruh.\n\n` +
+        `(Pilih Batal kalau ingin datanya tetap disimpan.)`
+      );
+      if (hapus) deleteAttendanceRows(hapusIds, { silent: true });
+    }, 300);
   } catch (err) {
     console.error("Gagal membuat PDF:", err);
     alert("Gagal membuat PDF: " + err.message);
