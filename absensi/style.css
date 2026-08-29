@@ -29,6 +29,10 @@ body{
 }
 .app{max-width:960px;margin:auto;padding:16px 16px calc(24px + var(--safe-b))}
 header{padding:6px 2px 18px}
+/* Judul & menu logout dibuat rata tengah (bukan rata kiri-kanan) biar tampilan
+   header lebih rapi/profesional, ditumpuk vertikal: judul di atas, lalu
+   email+tombol Keluar di bawahnya, semua center. */
+header .row{flex-direction:column;align-items:center;justify-content:center;text-align:center}
 header h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em;
   background:linear-gradient(90deg,var(--primary-dark),var(--primary));
   -webkit-background-clip:text;background-clip:text;color:transparent}
@@ -198,7 +202,7 @@ button{font-family:inherit}
   background:linear-gradient(90deg,var(--primary-dark),var(--primary));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .auth-card form{text-align:left;margin-top:14px}
-.auth-user{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.auth-user{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
 .auth-user span{font-size:13px}
 .auth-user button{padding:9px 13px;min-height:auto}
 #mainApp[hidden]{display:none !important}
