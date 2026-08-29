@@ -264,7 +264,7 @@ $("fotoClearBtn").addEventListener("click", () => {
   $("fotoPreviewRow").hidden = true;
 });
 
-// ============ RENDER KARTU ID (canvas, ukuran cetak 5 x 8.5 cm @300dpi) ============
+// ============ RENDER KARTU ID (canvas, ukuran cetak CR80 8,56 x 5,398 cm @300dpi, portrait) ============
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -365,7 +365,7 @@ function drawCardBackground(ctx, w, h) {
 }
 
 async function renderIdCard(p, settings) {
-  const W = 600, H = 1020; // rasio 5 x 8.5 cm, resolusi cetak (300dpi)
+  const W = 638, H = 1013; // ukuran standar CR80 portrait (5,398 x 8,56 cm) @300dpi
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");

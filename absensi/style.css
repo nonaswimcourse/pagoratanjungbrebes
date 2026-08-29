@@ -69,7 +69,7 @@ textarea{resize:vertical}
 .qr-thumb{width:64px;height:64px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .qr-thumb canvas{width:100%;height:100%;display:block}
 
-.card-thumb{width:56px;height:96px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#697386;text-align:center;line-height:1.3}
+.card-thumb{width:56px;height:89px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#697386;text-align:center;line-height:1.3}
 .card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .participant .info small{display:block;margin-top:2px}
 .participant .info input{margin:4px 0;font-size:14px;padding:8px 10px}
@@ -115,6 +115,6 @@ button{font-family:inherit}
   .card{padding:14px}
   .participant{grid-template-columns:48px 42px 1fr;grid-template-rows:auto auto}
   .qr-thumb{width:48px;height:48px}
-  .card-thumb{width:42px;height:72px}
+  .card-thumb{width:42px;height:67px}
   .actions{grid-column:1 / -1;justify-content:flex-start}
 }
