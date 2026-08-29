@@ -66,8 +66,34 @@ const authMsg = $("authMsg");
 const loginBtn = $("loginBtn");
 const authEmailInput = $("authEmail");
 const authPasswordInput = $("authPassword");
-const authUserEmail = $("authUserEmail");
+const authUserEmail = $("profileUserEmail");
 const logoutBtn = $("logoutBtn");
+const profileBtn = $("profileBtn");
+const profileMenu = $("profileMenu");
+
+// ============ MENU PROFIL (dropdown: logo aplikasi, nama pengguna, Logout) ============
+function closeProfileMenu() {
+  profileMenu.hidden = true;
+  profileBtn.setAttribute("aria-expanded", "false");
+}
+function toggleProfileMenu() {
+  const willOpen = profileMenu.hidden;
+  profileMenu.hidden = !willOpen;
+  profileBtn.setAttribute("aria-expanded", String(willOpen));
+}
+profileBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleProfileMenu();
+});
+// Tutup dropdown kalau klik di luar area menu/tombolnya, atau tekan Escape.
+document.addEventListener("click", (e) => {
+  if (!profileMenu.hidden && !profileMenu.contains(e.target) && e.target !== profileBtn) {
+    closeProfileMenu();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeProfileMenu();
+});
 
 function showAuthMsg(text, type = "bad") {
   authMsg.hidden = false;
@@ -95,6 +121,7 @@ function applyAuthUI(session) {
   } else {
     mainApp.hidden = true;
     authScreen.hidden = false;
+    closeProfileMenu();
   }
 }
 
@@ -132,6 +159,7 @@ if (configError) {
     logoutBtn.disabled = true;
     try {
       await db.auth.signOut();
+      closeProfileMenu();
     } finally {
       logoutBtn.disabled = false;
     }

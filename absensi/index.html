@@ -32,15 +32,27 @@
 
 <div class="app" id="mainApp" hidden>
   <header>
+    <button type="button" class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+      <span class="profile-btn-icon">👤</span>
+      <span class="profile-btn-label">Profil</span>
+    </button>
+
     <div class="row">
       <div>
         <h1>ABSENSI QR</h1>
         <p>Scan QR Code dengan kamera HP</p>
       </div>
-      <div class="auth-user">
-        <span id="authUserEmail" class="muted"></span>
-        <button type="button" class="secondary" id="logoutBtn">Keluar</button>
+    </div>
+
+    <div id="profileMenu" class="profile-menu" hidden>
+      <div class="profile-menu-header">
+        <div class="app-logo-badge">AQ</div>
+        <div class="profile-menu-info">
+          <div class="profile-menu-app">Absensi QR</div>
+          <div class="profile-menu-user" id="profileUserEmail"></div>
+        </div>
       </div>
+      <button type="button" class="danger profile-logout-btn" id="logoutBtn">🚪 Logout</button>
     </div>
   </header>
 

@@ -28,15 +28,34 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 .app{max-width:960px;margin:auto;padding:16px 16px calc(24px + var(--safe-b))}
-header{padding:6px 2px 18px}
-/* Judul & menu logout dibuat rata tengah (bukan rata kiri-kanan) biar tampilan
-   header lebih rapi/profesional, ditumpuk vertikal: judul di atas, lalu
-   email+tombol Keluar di bawahnya, semua center. */
+header{padding:6px 2px 18px;position:relative}
+/* Judul dibuat rata tengah biar tampilan header lebih rapi/profesional. */
 header .row{flex-direction:column;align-items:center;justify-content:center;text-align:center}
 header h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em;
   background:linear-gradient(90deg,var(--primary-dark),var(--primary));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+
+/* --- Tombol Profil (pojok kanan atas header) + dropdown-nya --- */
+.profile-btn{position:absolute;top:6px;right:2px;display:flex;align-items:center;gap:6px;
+  background:#eef2f9;border:1px solid var(--border);border-radius:999px;padding:8px 14px 8px 10px;
+  font-weight:700;font-size:13.5px;color:var(--text);cursor:pointer;min-height:auto;
+  transition:background .15s ease,transform .1s ease}
+.profile-btn:active{transform:scale(.97);background:#e4e9f2}
+.profile-btn-icon{font-size:16px;line-height:1}
+
+.profile-menu{position:absolute;top:44px;right:2px;z-index:20;width:240px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+  box-shadow:var(--shadow-md);padding:14px;animation:fadeIn .15s ease}
+.profile-menu-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.app-logo-badge{flex:0 0 auto;width:38px;height:38px;border-radius:11px;display:flex;
+  align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark))}
+.profile-menu-info{min-width:0}
+.profile-menu-app{font-weight:800;font-size:14px}
+.profile-menu-user{font-size:12.5px;color:var(--muted);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.profile-logout-btn{width:100%;margin-top:2px}
 h2{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.01em}
 .muted,small{color:var(--muted)}
 p.muted{font-size:13.5px;line-height:1.55}
@@ -202,9 +221,6 @@ button{font-family:inherit}
   background:linear-gradient(90deg,var(--primary-dark),var(--primary));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .auth-card form{text-align:left;margin-top:14px}
-.auth-user{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
-.auth-user span{font-size:13px}
-.auth-user button{padding:9px 13px;min-height:auto}
 #mainApp[hidden]{display:none !important}
 
 @media(max-width:560px){
@@ -223,6 +239,8 @@ button{font-family:inherit}
   .tab{flex-direction:column;font-size:11px;padding:8px 4px;border-radius:12px;gap:2px;
     display:flex;align-items:center;justify-content:center;min-height:52px}
   .tab.active{box-shadow:none}
+
+  .profile-menu{right:12px;left:12px;width:auto}
 
   .participant{grid-template-columns:48px 42px 1fr;grid-template-rows:auto auto}
   .qr-thumb{width:48px;height:48px}
