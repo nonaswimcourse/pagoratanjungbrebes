@@ -1233,6 +1233,17 @@ function jamPendek(v) {
   return String(v).slice(0, 5);
 }
 
+// Ambil tanggal HARI INI menurut waktu LOKAL perangkat (bukan UTC).
+// PENTING: new Date().toISOString() selalu pakai UTC, padahal WIB = UTC+7 —
+// jadi kalau dulu dipakai langsung, absen yang di-scan jam 00:00–06:59 pagi
+// (persis jam masuk sekolah) malah tersimpan dengan tanggal KEMARIN, sehingga
+// absen hari itu "hilang"/tidak muncul di rekap hari ini. Fungsi ini menghitung
+// tanggal berdasarkan jam & tanggal lokal perangkat, bukan UTC.
+function localDateStr(d = new Date()) {
+  const offsetMs = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offsetMs).toISOString().slice(0, 10);
+}
+
 async function handleScan(code) {
   if (!requireDb()) return showResult(configError, "bad");
   const now = Date.now();
@@ -1251,7 +1262,7 @@ async function handleScan(code) {
     return showResult("QR tidak terdaftar.", "bad");
   }
 
-  const today = new Date().toISOString().slice(0,10);
+  const today = localDateStr();
   const { data: existing } = await db
     .from("kehadiran").select("*")
     .eq("peserta_id", peserta.id).eq("tanggal", today).maybeSingle();
@@ -1261,10 +1272,16 @@ async function handleScan(code) {
     return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${jamPendek(existing.jam)}`, "warn");
   }
 
-  const jamSekarang = new Date().toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  // PENTING: locale "id-ID" menampilkan jam pakai TITIK sebagai pemisah
+  // (mis. "07.05"), bukan titik dua ("07:05"). Kolom "jam" di database
+  // bertipe time, yang HANYA menerima format "HH:MM" — kalau dulu dipakai
+  // toLocaleTimeString("id-ID", ...) langsung, setiap absen baru gagal
+  // tersimpan dengan error "invalid input syntax for type time", di jam
+  // berapa pun (bukan cuma soal jam 7 ke atas). Jadi di sini disusun manual
+  // pakai titik dua supaya sesuai format yang diterima Postgres.
+  const now2 = new Date();
+  const jamSekarang = String(now2.getHours()).padStart(2, "0") + ":" +
+    String(now2.getMinutes()).padStart(2, "0");
 
   const { error: insertError } = await db.from("kehadiran").insert({
     peserta_id: peserta.id,
@@ -1273,6 +1290,22 @@ async function handleScan(code) {
   });
 
   if (insertError) {
+    // Kalau dua HP/petugas kebetulan men-scan QR yang sama nyaris bersamaan,
+    // keduanya bisa lolos pengecekan "existing" di atas sebelum salah satu
+    // sempat menyimpan duluan — yang kedua akan gagal insert karena baris untuk
+    // peserta+tanggal itu sudah ada (unique constraint di tabel "kehadiran").
+    // Daripada menampilkan pesan error mentah yang bikin panik, deteksi kasus
+    // ini dan tampilkan sebagai "SUDAH ABSEN" seperti biasa.
+    const isDuplicate = insertError.code === "23505" ||
+      /duplicate key|unique constraint/i.test(insertError.message || "");
+    if (isDuplicate) {
+      const { data: nowExisting } = await db
+        .from("kehadiran").select("*")
+        .eq("peserta_id", peserta.id).eq("tanggal", today).maybeSingle();
+      const jamTampil = nowExisting ? jamPendek(nowExisting.jam) : jamSekarang;
+      showScanOverlay("warn", "SUDAH ABSEN", `${peserta.nama} — ${jamTampil}`);
+      return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${jamTampil}`, "warn");
+    }
     showScanOverlay("bad", "GAGAL", "Gagal menyimpan kehadiran.");
     return showResult("Gagal menyimpan: " + insertError.message, "bad");
   }
@@ -1280,6 +1313,7 @@ async function handleScan(code) {
   showResult(`✅ ABSEN BERHASIL<br><b>${esc(peserta.nama)}</b><br>${esc(peserta.asal_sekolah || "-")}`, "ok");
   loadAttendance();
 }
+
 
 function showResult(html, type) {
   $("result").innerHTML = html;
