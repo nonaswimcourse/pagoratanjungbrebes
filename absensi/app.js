@@ -315,7 +315,10 @@ function drawCornerWave(ctx, W, H, flipX, flipY, big) {
   ctx.translate(flipX ? W : 0, flipY ? H : 0);
   ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
 
-  const aw = big ? W * 0.58 : W * 0.28;
+  // ah/aw big diperkecil dari versi sebelumnya (0.58/0.15) karena sekarang
+  // dipakai simetris di KEDUA sisi kiri & kanan (dulu cuma satu sisi besar),
+  // supaya tidak saling tumpang tindih berlebihan di tengah atas/bawah.
+  const aw = big ? W * 0.44 : W * 0.28;
   const ah = big ? H * 0.15 : H * 0.065;
 
   // --- gumpalan navy (lapisan belakang) ---
@@ -355,13 +358,14 @@ function drawCardBackground(ctx, w, h) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
-  // Latar putih penuh + gelombang dekoratif di 4 sudut (besar di kiri,
-  // kecil di kanan — meniru gaya kartu ID biru-kuning modern), bukan lagi
-  // blok header navy solid seperti versi sebelumnya.
+  // Latar putih penuh + gelombang dekoratif SIMETRIS di 4 sudut (ukuran sama
+  // kiri & kanan) supaya seimbang dengan konten yang sekarang semuanya
+  // center di tengah kartu (sebelumnya besar-sebelah-kiri untuk layout
+  // lama yang QR & fotonya berdampingan kiri-kanan).
   drawCornerWave(ctx, w, h, false, false, true);  // kiri atas (besar)
-  drawCornerWave(ctx, w, h, true, false, false);  // kanan atas (kecil)
+  drawCornerWave(ctx, w, h, true, false, true);   // kanan atas (besar, simetris)
   drawCornerWave(ctx, w, h, false, true, true);   // kiri bawah (besar)
-  drawCornerWave(ctx, w, h, true, true, false);   // kanan bawah (kecil)
+  drawCornerWave(ctx, w, h, true, true, true);    // kanan bawah (besar, simetris)
 }
 
 async function renderIdCard(p, settings) {
@@ -456,8 +460,13 @@ async function renderIdCard(p, settings) {
       // kosong seperti mode "contain".
       const ratio = Math.max(fotoBoxW / img.width, fotoBoxH / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
+      // Horizontal tetap di-tengah (aman, jarang motong bagian penting).
+      // Vertikal DIPATOK PERMANEN KE ATAS (bukan di-tengah lagi) — jadi
+      // kalau ada bagian yang perlu dipotong karena rasio beda, yang
+      // dipotong SELALU bagian bawah saja, kepala/rambut di atas tidak
+      // pernah terpotong.
       const drawX = fotoBoxX + (fotoBoxW - iw) / 2;
-      const drawY = fotoBoxY + (fotoBoxH - ih) / 2;
+      const drawY = fotoBoxY;
       ctx.drawImage(img, drawX, drawY, iw, ih);
       ctx.restore();
     } catch (err) {
