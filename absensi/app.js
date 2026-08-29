@@ -365,88 +365,88 @@ function drawCardBackground(ctx, w, h) {
 }
 
 async function renderIdCard(p, settings) {
-  const W = 638, H = 1013; // ukuran standar CR80 portrait (5,398 x 8,56 cm) @300dpi
+  // Ukuran cetak standar CR80 portrait (5,398 x 8,56 cm), dirender @600dpi
+  // (SCALE=2 dari basis 300dpi) supaya foto & logo tampil HD/tajam saat
+  // dicetak besar, walau ukuran fisik kartu tetap sama seperti kartu ID
+  // pada umumnya.
+  const SCALE = 2;
+  const W = 638 * SCALE, H = 1013 * SCALE;
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // --- bingkai kartu membulat + latar, semuanya di-clip ke bentuk kartu
+  // supaya tampak seperti kartu ID cetak profesional (bukan kotak lurus
+  // biasa) ---
+  const cardRadius = 22 * SCALE;
+  ctx.save();
+  roundRect(ctx, 0, 0, W, H, cardRadius);
+  ctx.clip();
 
   drawCardBackground(ctx, W, H);
 
-  // --- logo (lingkaran putih di area tengah-atas, selalu digambar sebagai
-  // bingkai meski logo belum diisi, supaya tetap rapi) ---
-  const logoCx = W / 2, logoCy = 160, logoR = 64;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(logoCx, logoCy, logoR, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = "#f7a823";
-  ctx.stroke();
-  ctx.restore();
+  // --- logo instansi: digambar LANGSUNG tanpa bingkai/pembungkus lingkaran,
+  // proporsi asli logo dijaga (contain-fit) supaya tidak gepeng/pecah, dan
+  // diberi ruang lebih lega di area atas kartu ---
+  const logoMaxW = W * 0.46;
+  const logoMaxH = 118 * SCALE;
+  const logoTopY = 50 * SCALE;
+  let cursorY = logoTopY + 34 * SCALE; // posisi default judul kalau logo kosong
 
   if (settings.logo) {
     try {
       const img = await loadImage(settings.logo);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(logoCx, logoCy, logoR - 6, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      // Mode "contain" (bukan "cover" seperti versi sebelumnya): logo hanya
-      // diperkecil secukupnya supaya utuh masuk ke lingkaran, sehingga logo
-      // TIDAK PERNAH terpotong walau bentuknya persegi panjang / lebar.
-      const size = (logoR - 6) * 2 * 0.94;
-      const ratio = Math.min(size / img.width, size / img.height);
+      const ratio = Math.min(logoMaxW / img.width, logoMaxH / img.height);
       const iw = img.width * ratio, ih = img.height * ratio;
-      ctx.drawImage(img, logoCx - iw / 2, logoCy - ih / 2, iw, ih);
-      ctx.restore();
+      const drawX = W / 2 - iw / 2;
+      ctx.drawImage(img, drawX, logoTopY, iw, ih);
+      cursorY = logoTopY + ih + 42 * SCALE;
     } catch (err) {
       console.error("Gagal memuat logo di kartu:", err);
     }
   }
 
-  let cursorY = logoCy + logoR + 46;
-
   // --- judul ---
   ctx.textAlign = "center";
   ctx.fillStyle = "#123fa8";
-  ctx.font = "bold 34px Arial, sans-serif";
-  const judulLines = wrapLines(ctx, settings.judul || "", W - 80);
+  ctx.font = `bold ${34 * SCALE}px Arial, sans-serif`;
+  const judulLines = wrapLines(ctx, settings.judul || "", W - 80 * SCALE);
   judulLines.forEach(line => {
     ctx.fillText(line, W / 2, cursorY);
-    cursorY += 40;
+    cursorY += 40 * SCALE;
   });
 
   // --- sub-judul (hitam tebal, senada dengan versi cetak KKG) ---
-  cursorY += 8;
+  cursorY += 8 * SCALE;
   ctx.fillStyle = "#1a1a1a";
-  ctx.font = "bold 22px Arial, sans-serif";
-  const subLines = wrapLines(ctx, settings.subjudul || "", W - 80);
+  ctx.font = `bold ${22 * SCALE}px Arial, sans-serif`;
+  const subLines = wrapLines(ctx, settings.subjudul || "", W - 80 * SCALE);
   subLines.forEach(line => {
     ctx.fillText(line, W / 2, cursorY);
-    cursorY += 28;
+    cursorY += 28 * SCALE;
   });
 
-  cursorY += 26;
+  cursorY += 26 * SCALE;
 
   // --- QR code (rata kiri, bukan di tengah, supaya foto peserta dapat
   // ruang lebih besar di sisi kanan seperti pada desain acuan) ---
   // Dibungkus kotak putih berbingkai tipis supaya kontras & gampang dipindai,
   // dan digambar langsung pada ukuran akhirnya (bukan diperbesar dari ukuran
   // kecil seperti sebelumnya) supaya hasilnya TAJAM, tidak buram.
-  const qrMarginX = 46;
-  const qrSize = 220;
-  const qrBoxPad = 14;
+  const qrMarginX = 46 * SCALE;
+  const qrSize = 220 * SCALE;
+  const qrBoxPad = 14 * SCALE;
   const qrBoxSize = qrSize + qrBoxPad * 2;
   const qrBoxX = qrMarginX;
   const qrBoxY = cursorY;
   ctx.fillStyle = "#ffffff";
-  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16);
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * SCALE);
   ctx.fill();
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * SCALE;
   ctx.strokeStyle = "#d8dce8";
-  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16);
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * SCALE);
   ctx.stroke();
 
   const tmp = document.createElement("div");
@@ -471,25 +471,25 @@ async function renderIdCard(p, settings) {
   // --- nama & asal sekolah (rata kiri, langsung di atas latar putih,
   // tanpa "pil" warna seperti versi sebelumnya — meniru desain acuan) ---
   const textX = qrBoxX;
-  const textMaxWidth = areaX - textX - 16;
-  let textY = qrBoxY + qrBoxSize + 40;
+  const textMaxWidth = areaX - textX - 16 * SCALE;
+  let textY = qrBoxY + qrBoxSize + 40 * SCALE;
 
   ctx.textAlign = "left";
   ctx.fillStyle = "#123fa8";
-  ctx.font = "bold 20px Arial, sans-serif";
+  ctx.font = `bold ${20 * SCALE}px Arial, sans-serif`;
   const namaLines = wrapLines(ctx, p.nama.toUpperCase(), textMaxWidth);
   namaLines.forEach(line => {
     ctx.fillText(line, textX, textY);
-    textY += 26;
+    textY += 26 * SCALE;
   });
 
-  textY += 6;
+  textY += 6 * SCALE;
   ctx.fillStyle = "#1a1a1a";
-  ctx.font = "bold 15px Arial, sans-serif";
+  ctx.font = `bold ${15 * SCALE}px Arial, sans-serif`;
   const sekolahLines = wrapLines(ctx, (p.asal_sekolah || "-").toUpperCase(), textMaxWidth);
   sekolahLines.forEach(line => {
     ctx.fillText(line, textX, textY);
-    textY += 20;
+    textY += 20 * SCALE;
   });
 
   // Foto digambar PALING TERAKHIR (di atas segalanya) supaya menutupi sisa
@@ -508,6 +508,15 @@ async function renderIdCard(p, settings) {
       console.error("Gagal memuat foto peserta di kartu:", err);
     }
   }
+
+  ctx.restore(); // lepas clip bentuk kartu
+
+  // --- garis tepi tipis di sekeliling kartu supaya terlihat rapi & selesai
+  // (finishing) seperti kartu ID cetak profesional ---
+  ctx.lineWidth = 2 * SCALE;
+  ctx.strokeStyle = "#d8dce8";
+  roundRect(ctx, 1 * SCALE, 1 * SCALE, W - 2 * SCALE, H - 2 * SCALE, cardRadius - 1 * SCALE);
+  ctx.stroke();
 
   return canvas;
 }
