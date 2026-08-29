@@ -958,6 +958,12 @@ async function stopScanner() {
   $("result").textContent = "Kamera dimatikan.";
 }
 
+// Ambil hanya jam:menit dari nilai jam (buang detik kalau ada), mis. "10:06:23" -> "10:06".
+function jamPendek(v) {
+  if (!v) return "-";
+  return String(v).slice(0, 5);
+}
+
 async function handleScan(code) {
   if (!requireDb()) return showResult(configError, "bad");
   const now = Date.now();
@@ -982,13 +988,19 @@ async function handleScan(code) {
     .eq("peserta_id", peserta.id).eq("tanggal", today).maybeSingle();
 
   if (existing) {
-    showScanOverlay("warn", "SUDAH ABSEN", `${peserta.nama} — ${existing.jam}`);
-    return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${existing.jam}`, "warn");
+    showScanOverlay("warn", "SUDAH ABSEN", `${peserta.nama} — ${jamPendek(existing.jam)}`);
+    return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${jamPendek(existing.jam)}`, "warn");
   }
+
+  const jamSekarang = new Date().toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 
   const { error: insertError } = await db.from("kehadiran").insert({
     peserta_id: peserta.id,
-    tanggal: today
+    tanggal: today,
+    jam: jamSekarang
   });
 
   if (insertError) {
@@ -1049,7 +1061,7 @@ function applyAttendanceFilter() {
   } else {
     box.innerHTML = attendanceFiltered.map((x, i) => `
       <tr><td>${i + 1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
-      <td>${x.tanggal}</td><td>${x.jam}</td></tr>`).join("");
+      <td>${x.tanggal}</td><td>${jamPendek(x.jam)}</td></tr>`).join("");
   }
   $("stats").innerHTML = `<div><b>${attendanceFiltered.length}</b><span>Total scan${selected !== "semua" ? " (tanggal ini)" : ""}</span></div>`;
 }
@@ -1182,7 +1194,7 @@ $("downloadRekapPdf").addEventListener("click", () => {
         x.peserta?.nama || "-",
         x.peserta?.asal_sekolah || "-",
         x.tanggal || "-",
-        x.jam || "-"
+        jamPendek(x.jam)
       ]),
       styles: { font: "helvetica", fontSize: 10, cellPadding: 2.2 },
       headStyles: { fillColor: [18, 63, 168], textColor: 255, fontStyle: "bold" },
