@@ -248,10 +248,9 @@ $("fotoFile").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   try {
-    // maxDim dinaikkan (960 -> 1400) supaya foto tetap tajam/HD walau
-    // dicetak besar di Kartu ID beresolusi tinggi, bukan buram karena
-    // diperbesar dari sumber beresolusi kecil.
-    pendingFotoDataUrl = await compressImageFile(file, 1400, 0.92, { preserveTransparency: true });
+    // maxDim dinaikkan (1400 -> 2000, resolusi paling tinggi) supaya foto
+    // benar-benar tajam/HD, tidak blur, walau dicetak besar di Kartu ID.
+    pendingFotoDataUrl = await compressImageFile(file, 2000, 0.95, { preserveTransparency: true });
     $("fotoPreview").src = pendingFotoDataUrl;
     $("fotoPreviewRow").hidden = false;
   } catch (err) {
@@ -367,10 +366,9 @@ function drawCardBackground(ctx, w, h) {
 
 async function renderIdCard(p, settings) {
   // Ukuran cetak 5 x 8,5 cm (ukuran ID card portrait pada umumnya), dirender
-  // @600dpi (SCALE=2 dari basis 300dpi: 591x1004px) supaya foto & logo
-  // tampil maksimal HD/tajam saat dicetak besar, walau ukuran fisik kartu
-  // tetap 5 x 8,5 cm.
-  const SCALE = 2;
+  // @900dpi (SCALE=3 dari basis 300dpi: 591x1004px) — resolusi paling tinggi
+  // supaya foto & logo benar-benar tajam/HD, tidak blur, saat dicetak besar.
+  const SCALE = 3;
   const W = 591 * SCALE, H = 1004 * SCALE;
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
@@ -431,16 +429,19 @@ async function renderIdCard(p, settings) {
 
   cursorY += 26 * SCALE;
 
-  // --- QR code (rata kiri, bukan di tengah, supaya foto peserta dapat
-  // ruang lebih besar di sisi kanan seperti pada desain acuan) ---
+  // --- QR code (DI-TENGAHKAN secara horizontal di kolom kiri — bukan rata
+  // kiri lagi — supaya QR, nama, dan asal sekolah semuanya center, sesuai
+  // permintaan, tanpa bertabrakan dengan foto peserta di sisi kanan) ---
   // Dibungkus kotak putih berbingkai tipis supaya kontras & gampang dipindai,
   // dan digambar langsung pada ukuran akhirnya (bukan diperbesar dari ukuran
-  // kecil seperti sebelumnya) supaya hasilnya TAJAM, tidak buram.
-  const qrMarginX = 46 * SCALE;
+  // kecil) supaya hasilnya TAJAM, tidak buram.
+  const areaW = W * 0.50;
+  const areaX = W - areaW; // batas kiri area foto = lebar kolom kiri (QR+teks)
+
   const qrSize = 220 * SCALE;
   const qrBoxPad = 14 * SCALE;
   const qrBoxSize = qrSize + qrBoxPad * 2;
-  const qrBoxX = qrMarginX;
+  const qrBoxX = (areaX - qrBoxSize) / 2; // center di dalam kolom kiri
   const qrBoxY = cursorY;
   ctx.fillStyle = "#ffffff";
   roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * SCALE);
@@ -464,23 +465,21 @@ async function renderIdCard(p, settings) {
   // --- foto peserta (kanan, besar, menyentuh tepi kanan & bawah kartu) ---
   // Area dihitung SEBELUM teks nama/sekolah supaya lebar teks bisa
   // menghindari tumpang tindih dengan foto.
-  const areaW = W * 0.50;
-  const areaX = W - areaW;
   const areaTop = qrBoxY;
   const areaH = H - areaTop;
 
-  // --- nama & asal sekolah (rata kiri, langsung di atas latar putih,
-  // tanpa "pil" warna seperti versi sebelumnya — meniru desain acuan) ---
-  const textX = qrBoxX;
-  const textMaxWidth = areaX - textX - 16 * SCALE;
+  // --- nama & asal sekolah, DI-TENGAHKAN (center) mengikuti kolom kiri yang
+  // sama dengan QR, bukan rata kiri lagi ---
+  const textCenterX = areaX / 2;
+  const textMaxWidth = areaX - 32 * SCALE;
   let textY = qrBoxY + qrBoxSize + 40 * SCALE;
 
-  ctx.textAlign = "left";
+  ctx.textAlign = "center";
   ctx.fillStyle = "#123fa8";
   ctx.font = `bold ${20 * SCALE}px Arial, sans-serif`;
   const namaLines = wrapLines(ctx, p.nama.toUpperCase(), textMaxWidth);
   namaLines.forEach(line => {
-    ctx.fillText(line, textX, textY);
+    ctx.fillText(line, textCenterX, textY);
     textY += 26 * SCALE;
   });
 
@@ -489,7 +488,7 @@ async function renderIdCard(p, settings) {
   ctx.font = `bold ${15 * SCALE}px Arial, sans-serif`;
   const sekolahLines = wrapLines(ctx, (p.asal_sekolah || "-").toUpperCase(), textMaxWidth);
   sekolahLines.forEach(line => {
-    ctx.fillText(line, textX, textY);
+    ctx.fillText(line, textCenterX, textY);
     textY += 20 * SCALE;
   });
 
@@ -685,9 +684,9 @@ async function loadParticipants() {
         btnSave.textContent = "Memproses foto...";
         btnSave.disabled = true;
         try {
-          // maxDim dinaikkan (960 -> 1400) supaya foto tetap tajam/HD saat
-          // dicetak besar di Kartu ID.
-          payload.foto = await compressImageFile(fotoFile, 1400, 0.92, { preserveTransparency: true });
+          // maxDim dinaikkan (1400 -> 2000, resolusi paling tinggi) supaya
+          // foto benar-benar tajam/HD, tidak blur.
+          payload.foto = await compressImageFile(fotoFile, 2000, 0.95, { preserveTransparency: true });
         } catch (err) {
           btnSave.textContent = "💾 Simpan";
           btnSave.disabled = false;
