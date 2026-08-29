@@ -16,8 +16,33 @@
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'"></script>
 </head>
 <body>
-<div class="app">
-  <header><h1>ABSENSI QR</h1><p>Scan QR Code dengan kamera HP</p></header>
+
+<div id="authScreen" class="auth-screen">
+  <div class="card auth-card">
+    <h1>ABSENSI QR</h1>
+    <p class="muted">Masuk untuk mengakses aplikasi.</p>
+    <form id="loginForm">
+      <input id="authEmail" type="email" placeholder="Email" required autocomplete="username">
+      <input id="authPassword" type="password" placeholder="Kata sandi" required autocomplete="current-password">
+      <button class="primary" type="submit" id="loginBtn">Masuk</button>
+    </form>
+    <div id="authMsg" class="result" hidden></div>
+  </div>
+</div>
+
+<div class="app" id="mainApp" hidden>
+  <header>
+    <div class="row">
+      <div>
+        <h1>ABSENSI QR</h1>
+        <p>Scan QR Code dengan kamera HP</p>
+      </div>
+      <div class="auth-user">
+        <span id="authUserEmail" class="muted"></span>
+        <button type="button" class="secondary" id="logoutBtn">Keluar</button>
+      </div>
+    </div>
+  </header>
 
   <nav class="tabs">
     <button class="tab active" data-page="scan">📷 Scan Absen</button>

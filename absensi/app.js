@@ -52,6 +52,85 @@ function requireDb(box) {
   return false;
 }
 
+// ============ AUTH (Supabase) ============
+// Aplikasi hanya bisa dipakai setelah user login. Sesi dicek saat halaman
+// dibuka, dan UI otomatis berpindah login/app lewat onAuthStateChange.
+const authScreen = $("authScreen");
+const mainApp = $("mainApp");
+const loginForm = $("loginForm");
+const authMsg = $("authMsg");
+const loginBtn = $("loginBtn");
+const authEmailInput = $("authEmail");
+const authPasswordInput = $("authPassword");
+const authUserEmail = $("authUserEmail");
+const logoutBtn = $("logoutBtn");
+
+function showAuthMsg(text, type = "bad") {
+  authMsg.hidden = false;
+  authMsg.textContent = text;
+  authMsg.className = "result " + type;
+}
+
+let currentSession = null;
+
+function applyAuthUI(session) {
+  currentSession = session;
+  if (session && session.user) {
+    authScreen.hidden = true;
+    mainApp.hidden = false;
+    authUserEmail.textContent = session.user.email || "";
+    // Muat ulang data untuk tab yang sedang aktif setiap kali status login berubah
+    const activeTab = document.querySelector(".tab.active");
+    if (activeTab) {
+      if (activeTab.dataset.page === "peserta") loadParticipants();
+      if (activeTab.dataset.page === "rekap") loadAttendance();
+    }
+  } else {
+    mainApp.hidden = true;
+    authScreen.hidden = false;
+  }
+}
+
+if (configError) {
+  // config.js belum diisi / gagal dimuat: tampilkan pesan di layar login,
+  // sembunyikan form supaya tidak mencoba login ke koneksi yang belum ada.
+  authScreen.hidden = false;
+  mainApp.hidden = true;
+  loginForm.hidden = true;
+  showAuthMsg(configError, "bad");
+} else if (db) {
+  db.auth.getSession().then(({ data }) => applyAuthUI(data.session));
+  db.auth.onAuthStateChange((_event, session) => applyAuthUI(session));
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = authEmailInput.value.trim();
+    const password = authPasswordInput.value;
+    authMsg.hidden = true;
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Memproses...";
+    try {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      authPasswordInput.value = "";
+    } catch (err) {
+      showAuthMsg("Gagal masuk: " + err.message, "bad");
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Masuk";
+    }
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    logoutBtn.disabled = true;
+    try {
+      await db.auth.signOut();
+    } finally {
+      logoutBtn.disabled = false;
+    }
+  });
+}
+
 let scanner = null;
 let scanning = false;
 let lastCode = "";
