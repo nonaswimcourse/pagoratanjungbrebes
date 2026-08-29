@@ -89,6 +89,9 @@ function applyAuthUI(session) {
       if (activeTab.dataset.page === "peserta") loadParticipants();
       if (activeTab.dataset.page === "rekap") loadAttendance();
     }
+    // Tarik pengaturan Kartu ID & Rekap terbaru dari server + pasang realtime, supaya
+    // perangkat ini selalu sama dengan perangkat lain (lihat bagian "SINKRON PENGATURAN").
+    loadRemoteSettingsAndSubscribe();
   } else {
     mainApp.hidden = true;
     authScreen.hidden = false;
@@ -164,7 +167,117 @@ function newKodeQr() {
   return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
 }
 
-// ============ PENGATURAN KARTU ID (judul, sub-judul, logo — tersimpan di browser ini) ============
+// ============ SINKRON PENGATURAN LEWAT SUPABASE (realtime di semua perangkat) ============
+// Dulu pengaturan Kartu ID & Rekap cuma disimpan di localStorage (khusus browser itu saja),
+// makanya kalau dibuka di HP/laptop/browser lain hasilnya beda. Sekarang disimpan juga ke
+// tabel "pengaturan" di Supabase, dan ada listener realtime: begitu disimpan di satu
+// perangkat, semua perangkat lain yang sedang membuka halaman ini langsung ter-update
+// otomatis tanpa perlu refresh manual. localStorage tetap dipakai sebagai cache offline
+// (biar tetap tampil sesuatu kalau internet lagi mati).
+let settingsRealtimeSubscribed = false;
+
+async function fetchPengaturanRemote(kunci) {
+  if (!db) return null;
+  try {
+    const { data, error } = await db.from("pengaturan").select("nilai").eq("kunci", kunci).maybeSingle();
+    if (error) { console.error(`Gagal memuat pengaturan "${kunci}" dari server:`, error.message); return null; }
+    return data ? data.nilai : null;
+  } catch (err) {
+    console.error(`Gagal memuat pengaturan "${kunci}" dari server:`, err.message);
+    return null;
+  }
+}
+
+async function savePengaturanRemote(kunci, nilai) {
+  if (!db) return false;
+  try {
+    const { error } = await db.from("pengaturan").upsert({ kunci, nilai, updated_at: new Date().toISOString() });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error(`Gagal menyimpan pengaturan "${kunci}" ke server:`, err.message);
+    return false;
+  }
+}
+
+// Terapkan pengaturan kartu ID yang datang dari server (baik hasil fetch awal maupun
+// event realtime dari perangkat lain) ke variabel & tampilan di perangkat ini.
+function applyRemoteCardSettings(nilai, { rebuildEditor = true } = {}) {
+  cardSettings = {
+    ...cloneDefaultCardSettings(),
+    ...nilai,
+    elements: { ...DEFAULT_ELEMENTS, ...(nilai.elements || {}) },
+  };
+  saveCardSettingsToStorage(cardSettings);
+  $("cardJudul").value = cardSettings.judul;
+  $("cardSubjudul").value = cardSettings.subjudul;
+  if (cardSettings.logo) {
+    $("cardLogoPreview").src = cardSettings.logo;
+    $("cardLogoPreview").hidden = false;
+  } else {
+    $("cardLogoPreview").hidden = true;
+  }
+  // Kalau panel "Pengaturan Kartu ID" sedang terbuka di perangkat ini, gambar ulang
+  // editor template-nya juga supaya posisi elemen & template langsung sinkron —
+  // bukan cuma nanti pas panel dibuka ulang.
+  const box = $("cardSettingsBox");
+  if (rebuildEditor && box && !box.hidden) {
+    setupTemplateEditor();
+  } else {
+    templateEditorReady = false; // biar dibangun ulang pakai data terbaru saat dibuka lagi
+  }
+}
+
+function applyRemoteRekapSettings(nilai) {
+  rekapSettings = { ...defaultRekapSettings, ...nilai };
+  saveRekapSettingsToStorage(rekapSettings);
+  $("rekapJudul").value = rekapSettings.judul;
+  $("rekapKecamatan").value = rekapSettings.kecamatan;
+  $("rekapTempat").value = rekapSettings.tempat;
+  $("rekapNamaKetua").value = rekapSettings.namaKetua;
+  $("rekapNipKetua").value = rekapSettings.nipKetua;
+  if (rekapSettings.tandaTangan) {
+    $("tandaTanganPreview").src = rekapSettings.tandaTangan;
+    $("tandaTanganPreviewRow").hidden = false;
+  } else {
+    $("tandaTanganPreviewRow").hidden = true;
+  }
+}
+
+// Pasang listener realtime SEKALI saja: setiap ada perubahan baris di tabel "pengaturan"
+// (dari perangkat mana pun), terapkan langsung ke perangkat ini.
+function subscribeRealtimeSettings() {
+  if (settingsRealtimeSubscribed || !db) return;
+  try {
+    db.channel("pengaturan-realtime")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.kartu_id" },
+        (payload) => { if (payload.new && payload.new.nilai) applyRemoteCardSettings(payload.new.nilai); })
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.rekap" },
+        (payload) => { if (payload.new && payload.new.nilai) applyRemoteRekapSettings(payload.new.nilai); })
+      .subscribe();
+    settingsRealtimeSubscribed = true;
+  } catch (err) {
+    console.error("Realtime pengaturan tidak tersedia:", err);
+  }
+}
+
+// Dipanggil sekali tiap kali login berhasil: tarik versi TERBARU dari server (siapa tahu
+// tadi diubah dari perangkat lain saat kita offline/belum login), lalu pasang realtime.
+async function loadRemoteSettingsAndSubscribe() {
+  const [remoteCard, remoteRekap] = await Promise.all([
+    fetchPengaturanRemote("kartu_id"),
+    fetchPengaturanRemote("rekap"),
+  ]);
+  if (remoteCard) applyRemoteCardSettings(remoteCard, { rebuildEditor: false });
+  if (remoteRekap) applyRemoteRekapSettings(remoteRekap);
+  subscribeRealtimeSettings();
+}
+
+// ============ PENGATURAN KARTU ID (judul, sub-judul, logo) ============
+// Dimuat dulu dari cache localStorage biar halaman tampil instan; versi resmi/terbaru
+// ditarik dari Supabase lewat loadRemoteSettingsAndSubscribe() di atas setelah login.
 
 const CARD_SETTINGS_KEY = "absensiKartuIdSettings";
 
@@ -272,13 +385,24 @@ $("cardTemplateReset").addEventListener("click", () => {
   setupTemplateEditor();
 });
 
-$("cardSettingsSave").addEventListener("click", () => {
+$("cardSettingsSave").addEventListener("click", async () => {
   cardSettings.judul = $("cardJudul").value.trim();
   cardSettings.subjudul = $("cardSubjudul").value.trim();
   // cardSettings.logo, .template, & .elements sudah diperbarui langsung oleh
   // listener upload/geser di atas — di sini tinggal disimpan semuanya.
-  saveCardSettingsToStorage(cardSettings);
-  alert("Pengaturan kartu disimpan.");
+  saveCardSettingsToStorage(cardSettings); // cache lokal, biar tetap ada walau lagi offline
+
+  const btn = $("cardSettingsSave");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Menyimpan...";
+  const ok = await savePengaturanRemote("kartu_id", cardSettings);
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+
+  alert(ok
+    ? "Pengaturan kartu disimpan & langsung tersinkron ke semua perangkat."
+    : "Pengaturan kartu tersimpan di perangkat ini saja — gagal sinkron ke server (cek koneksi internet), jadi belum ikut berubah di perangkat lain.");
 });
 
 // ============ EDITOR VISUAL POSISI ELEMEN KARTU (drag & drop di atas template) ============
@@ -447,15 +571,26 @@ $("tandaTanganClearBtn").addEventListener("click", () => {
   $("tandaTanganPreviewRow").hidden = true;
 });
 
-$("rekapSettingsSave").addEventListener("click", () => {
+$("rekapSettingsSave").addEventListener("click", async () => {
   rekapSettings.judul = $("rekapJudul").value.trim() || defaultRekapSettings.judul;
   rekapSettings.kecamatan = $("rekapKecamatan").value.trim() || defaultRekapSettings.kecamatan;
   rekapSettings.tempat = $("rekapTempat").value.trim() || defaultRekapSettings.tempat;
   rekapSettings.namaKetua = $("rekapNamaKetua").value.trim();
   rekapSettings.nipKetua = $("rekapNipKetua").value.trim();
   // rekapSettings.tandaTangan sudah diperbarui langsung oleh listener upload/hapus di atas.
-  saveRekapSettingsToStorage(rekapSettings);
-  alert("Pengaturan rekap disimpan.");
+  saveRekapSettingsToStorage(rekapSettings); // cache lokal, biar tetap ada walau lagi offline
+
+  const btn = $("rekapSettingsSave");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Menyimpan...";
+  const ok = await savePengaturanRemote("rekap", rekapSettings);
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+
+  alert(ok
+    ? "Pengaturan rekap disimpan & langsung tersinkron ke semua perangkat."
+    : "Pengaturan rekap tersimpan di perangkat ini saja — gagal sinkron ke server (cek koneksi internet), jadi belum ikut berubah di perangkat lain.");
 });
 
 
