@@ -1364,7 +1364,7 @@ function normalizeDocument(row) {
     // string ('' atau isi) = surat ini sudah punya salinan tembusan sendiri dan tidak lagi berubah
     // walau format/isi Tembusan di Pengaturan diedit setelahnya.
     tembusan: row.tembusan === undefined ? null : row.tembusan,
-    // Data lampiran daftar nama (halaman terpisah khusus Surat Tugas), disimpan sebagai JSON string
+    // Data lampiran daftar nama (halaman terpisah, tersedia untuk semua jenis surat), disimpan sebagai JSON string
     // supaya cukup 1 kolom tambahan saja di tabel Supabase.
     lampiran_data: row.lampiran_data || '',
     isi_surat: row.isi_surat || '',
@@ -1966,10 +1966,10 @@ async function attachUploadedFiles(form, row) {
     // Jangan update cachedProfile, agar upload TTD baru tidak mengubah surat lama atau default profil.
   }
 
-  // Foto/gambar lampiran (khusus Surat Tugas) disimpan sebagai base64 di kolom lampiran_data yang
+  // Foto/gambar lampiran (tersedia untuk semua jenis surat) disimpan sebagai base64 di kolom lampiran_data yang
   // sudah ada, sama seperti TTD di atas, supaya tidak perlu kolom/bucket Supabase baru dan tetap
   // tampil walau Supabase belum aktif.
-  if (lampiranFotoFile && nextRow.jenis === 'tugas') {
+  if (lampiranFotoFile) {
     const fotoDataUrl = await fileToDataUrl(lampiranFotoFile);
     const prevLampiran = parseLampiranData(nextRow);
     nextRow.lampiran_data = JSON.stringify({
@@ -2133,8 +2133,7 @@ function documentFormHTML(typeKey, row = {}, mode = 'create') {
           <label>Catatan Internal</label>
           <textarea name="catatan" rows="3" placeholder="Catatan internal, disposisi, atau tindak lanjut" ${disabled}>${safe(data.catatan)}</textarea>
         </div>
-        ${resolvedTypeKey === 'tugas' ? `
-          <div class="field full lampiran-daftar-toggle">
+        <div class="field full lampiran-daftar-toggle">
             <label style="display:flex;align-items:center;gap:8px;">
               <input type="checkbox" name="lampiran_daftar_aktif" value="ya" style="width:auto;" ${lampiranData.aktif ? 'checked' : ''} ${disabled}>
               Sertakan Lampiran Daftar Nama (ditambahkan sebagai halaman terpisah, contoh: "Nama Petugas" diisi "Terlampir")
@@ -2176,7 +2175,6 @@ function documentFormHTML(typeKey, row = {}, mode = 'create') {
             <small>Format: JPG/PNG/WebP. Maksimal 5 MB.</small>
             ${lampiranData.foto_data_url ? `<small class="file-current">File tersimpan: ${safe(lampiranData.foto_name || 'Lihat foto lampiran')}</small>` : ''}
           </div>
-        ` : ''}
         ${resolvedTypeKey === 'masuk' ? `
           <div class="field full upload-card">
             <label>Upload Surat Asli</label>
@@ -3138,12 +3136,26 @@ function buildActivityMeta(row) {
   ]);
 }
 
-// === Lampiran daftar nama (khusus Surat Tugas) ===
+// Cek apakah surat punya data kegiatan (Hari/Tanggal/Waktu/Tempat/Acara) yang perlu ditampilkan.
+function hasActivityMetaData(row) {
+  return Boolean(row?.hari || row?.tanggal_kegiatan || row?.waktu || row?.tempat || row?.acara);
+}
+
+// Pisahkan isi surat menjadi beberapa paragraf berdasarkan baris kosong, supaya tabel data
+// kegiatan (Tanggal/Waktu/dst) bisa disisipkan di antara paragraf pembuka dan paragraf penutup,
+// alih-alih selalu menumpuk di atas seluruh isi surat.
+function splitParagraphBlocks(value) {
+  const raw = String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blocks = raw.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
+  return blocks.length ? blocks : (raw.trim() ? [raw.trim()] : []);
+}
+
+// === Lampiran daftar nama (tersedia untuk semua jenis surat) ===
 // Disimpan sebagai JSON string di kolom lampiran_data agar tidak perlu banyak kolom baru di Supabase.
 function parseLampiranData(row) {
   const fallback = {
     aktif: false, judul: 'Lampiran.1', kolom1_judul: '', kolom1_isi: '', kolom2_judul: '', kolom2_isi: '',
-    // Lampiran foto/gambar (opsional, khusus Surat Tugas). Disimpan sebagai base64 di sini juga
+    // Lampiran foto/gambar (opsional, tersedia untuk semua jenis surat). Disimpan sebagai base64 di sini juga
     // supaya tetap tampil di PDF/Word walau Supabase Storage belum aktif.
     foto_aktif: false, foto_judul: 'Lampiran Foto', foto_data_url: '', foto_name: ''
   };
@@ -3194,7 +3206,7 @@ function buildLampiranTablePage(row, profile) {
     </article>`;
 }
 
-// Halaman lampiran berupa foto/gambar yang diunggah (khusus Surat Tugas), terpisah dari
+// Halaman lampiran berupa foto/gambar yang diunggah (tersedia untuk semua jenis surat), terpisah dari
 // halaman lampiran daftar nama supaya keduanya bisa dipakai bersamaan atau sendiri-sendiri.
 function buildLampiranFotoPage(row) {
   const data = parseLampiranData(row);
@@ -3253,6 +3265,13 @@ function buildDocumentHTML(documentRow, renderOptions = {}) {
 }
 
 function buildOutgoingTemplate(row, profile, type, signatureOptions = DEFAULT_SIGNATURE_RENDER_OPTIONS) {
+  // Posisi tabel data kegiatan (Hari/Tanggal/Waktu/Tempat/Acara) disisipkan setelah paragraf
+  // pembuka isi surat dan sebelum paragraf penutup, mengikuti format surat permohonan/peminjaman
+  // resmi: salam pembuka -> paragraf pembuka -> data kegiatan -> paragraf penutup.
+  const paragraphs = splitParagraphBlocks(row.isi_surat);
+  const hasActivity = hasActivityMetaData(row);
+  const [firstParagraph, ...restParagraphs] = paragraphs;
+
   return `
     <article class="pdf-page">
       ${letterhead(profile)}
@@ -3271,10 +3290,16 @@ function buildOutgoingTemplate(row, profile, type, signatureOptions = DEFAULT_SI
         ${row.alamat_tujuan ? '<div class="doc-one-enter-gap"></div>' : ''}
         <p>${safe(row.alamat_tujuan || '')}</p>
       </div>
-      ${buildActivityMeta(row)}
-      <div class="body-text"><p class="salutation">Dengan hormat,</p>${paragraphText(row.isi_surat)}</div>
+      <div class="body-text">
+        <p class="salutation">Dengan hormat,</p>
+        ${firstParagraph ? paragraphText(firstParagraph) : ''}
+        ${hasActivity ? `<div class="doc-one-enter-gap"></div>${buildActivityMeta(row)}<div class="doc-one-enter-gap"></div>` : ''}
+        ${restParagraphs.map((block) => paragraphText(block)).join('')}
+      </div>
       ${signature(profile, row, signatureOptions)}
-    </article>`;
+    </article>
+    ${buildLampiranTablePage(row, profile)}
+    ${buildLampiranFotoPage(row)}`;
 }
 
 function buildIncomingTemplate(row, profile, type, signatureOptions = DEFAULT_SIGNATURE_RENDER_OPTIONS) {
@@ -3297,7 +3322,9 @@ function buildIncomingTemplate(row, profile, type, signatureOptions = DEFAULT_SI
       <div class="body-box"><h3>Ringkasan Isi Surat</h3>${paragraphText(row.isi_surat)}</div>
       <div class="disposition-box"><h3>Catatan Tindak Lanjut</h3>${paragraphText(row.catatan || '........................................................................................................')}</div>
       ${signature(profile, row, signatureOptions)}
-    </article>`;
+    </article>
+    ${buildLampiranTablePage(row, profile)}
+    ${buildLampiranFotoPage(row)}`;
 }
 
 function buildAssignmentTemplate(row, profile, type, signatureOptions = DEFAULT_SIGNATURE_RENDER_OPTIONS) {
@@ -3355,7 +3382,9 @@ function buildInvitationTemplate(row, profile, type, signatureOptions = DEFAULT_
         <p>Demikian undangan ini disampaikan. Atas perhatian dan kehadirannya, kami ucapkan terima kasih.</p>
       </div>
       ${signature(profile, row, signatureOptions)}
-    </article>`;
+    </article>
+    ${buildLampiranTablePage(row, profile)}
+    ${buildLampiranFotoPage(row)}`;
 }
 
 function buildDecisionTemplate(row, profile, type, signatureOptions = DEFAULT_SIGNATURE_RENDER_OPTIONS) {
@@ -3377,7 +3406,9 @@ function buildDecisionTemplate(row, profile, type, signatureOptions = DEFAULT_SI
         ${paragraphText(row.isi_surat)}
       </div>
       ${signature(profile, row, signatureOptions)}
-    </article>`;
+    </article>
+    ${buildLampiranTablePage(row, profile)}
+    ${buildLampiranFotoPage(row)}`;
 }
 
 function openPreview(row) {
