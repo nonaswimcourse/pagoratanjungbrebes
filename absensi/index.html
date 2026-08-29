@@ -45,9 +45,9 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-page="scan">📷 Scan Absen</button>
-    <button class="tab" data-page="peserta">👥 Peserta</button>
-    <button class="tab" data-page="rekap">📊 Rekap</button>
+    <button class="tab active" data-page="scan"><span class="tab-icon">📷</span><span class="tab-label">Scan Absen</span></button>
+    <button class="tab" data-page="peserta"><span class="tab-icon">👥</span><span class="tab-label">Peserta</span></button>
+    <button class="tab" data-page="rekap"><span class="tab-icon">📊</span><span class="tab-label">Rekap</span></button>
   </nav>
 
   <main>
@@ -111,14 +111,31 @@
           <button type="button" class="secondary" id="cardSettingsChevron">Buka ▾</button>
         </div>
         <div id="cardSettingsBox" class="import-box" hidden>
-          <p class="muted">Atur judul, sub-judul, dan logo yang tampil di setiap Kartu ID peserta.</p>
-          <input id="cardJudul" placeholder="Judul (mis. KKG PJOK SD KEC.TANJUNG)">
-          <input id="cardSubjudul" placeholder="Sub-judul (mis. KAB.BREBES)">
+          <p class="muted">Upload gambar desain/template Kartu ID sendiri (PNG/JPG, ukuran bebas). Logo, Foto, Barcode, Nama &amp; Sekolah akan otomatis tertempel di atas template ini — tinggal geser kotaknya ke posisi yang pas, tanpa perlu ubah kode sama sekali.</p>
+
+          <label class="field-label">Template Desain Kartu</label>
+          <input type="file" id="cardTemplateFile" accept="image/*">
+          <div class="tpl-toolbar">
+            <button type="button" class="secondary" id="cardTemplateReset">↺ Pakai Template Bawaan</button>
+          </div>
+
+          <label class="field-label">Logo Instansi (ditempel otomatis di kartu)</label>
           <input type="file" id="cardLogoFile" accept="image/*">
           <div class="row" style="margin-top:8px">
             <img id="cardLogoPreview" alt="Logo" hidden>
             <button type="button" class="secondary" id="cardLogoClear">Hapus Logo</button>
           </div>
+
+          <label class="field-label">Judul (opsional)</label>
+          <input id="cardJudul" placeholder="Judul (mis. KKG PJOK SD KEC.TANJUNG)">
+          <label class="field-label">Sub-judul (opsional)</label>
+          <input id="cardSubjudul" placeholder="Sub-judul (mis. KAB.BREBES)">
+
+          <div id="templateEditorWrap">
+            <p class="muted" style="margin:14px 0 2px">Atur posisi &amp; ukuran: seret kotak untuk memindah, tarik titik biru di sudut kanan-bawah untuk mengubah ukuran.</p>
+            <div id="templateEditor"></div>
+          </div>
+
           <button type="button" class="primary" id="cardSettingsSave">Simpan Pengaturan</button>
         </div>
       </div>

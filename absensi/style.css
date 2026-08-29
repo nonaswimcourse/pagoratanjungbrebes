@@ -1,36 +1,91 @@
+:root{
+  --primary:#1666d9;
+  --primary-dark:#0f2f8c;
+  --accent:#f7a823;
+  --bg:#eef2f9;
+  --surface:#ffffff;
+  --text:#172033;
+  --muted:#697386;
+  --border:#e3e8f0;
+  --danger:#e0363f;
+  --danger-bg:#ffe1e1;
+  --radius-lg:20px;
+  --radius-md:14px;
+  --radius-sm:10px;
+  --shadow-sm:0 1px 2px rgba(15,30,70,.06), 0 1px 1px rgba(15,30,70,.04);
+  --shadow-md:0 8px 24px -8px rgba(15,30,70,.18);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f3f6fa;color:#172033}
-.app{max-width:900px;margin:auto;padding:16px}
-header{padding:10px 4px 16px}
-h1{margin:0;font-size:26px}
-h2{margin-top:0}
-.muted,small{color:#697386}
-.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:14px}
-.tab,.primary,.secondary,.danger{border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;min-height:44px}
-.tab{background:#e4e9f0}
-.tab.active,.primary{background:#1666d9;color:#fff}
-.secondary{background:#e4e9f0;color:#172033}
-.danger{background:#ffe1e1;color:#b00020}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(22,102,217,.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(247,168,35,.10), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  -webkit-tap-highlight-color:transparent;
+}
+.app{max-width:960px;margin:auto;padding:16px 16px calc(24px + var(--safe-b))}
+header{padding:6px 2px 18px}
+header h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(90deg,var(--primary-dark),var(--primary));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+h2{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.01em}
+.muted,small{color:var(--muted)}
+p.muted{font-size:13.5px;line-height:1.55}
+
+/* --- Navigasi tab (desktop: pill di atas, mobile: bottom nav) --- */
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:16px;padding:5px;
+  background:rgba(255,255,255,.7);backdrop-filter:blur(6px);border-radius:16px;
+  border:1px solid var(--border)}
+.tab{border:0;border-radius:12px;padding:11px 16px;font-weight:700;cursor:pointer;
+  min-height:44px;background:transparent;color:var(--muted);flex:1;
+  transition:background .15s ease,color .15s ease,transform .1s ease;white-space:nowrap}
+.tab.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;box-shadow:var(--shadow-sm)}
+.tab:active{transform:scale(.97)}
+
+.primary,.secondary,.danger{border:0;border-radius:var(--radius-sm);padding:13px 16px;
+  font-weight:700;cursor:pointer;min-height:46px;transition:filter .15s ease,transform .1s ease}
+.primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;
+  width:100%;margin-top:8px;box-shadow:0 6px 16px -6px rgba(22,102,217,.55)}
+.primary:active{transform:scale(.98);filter:brightness(.96)}
+.secondary{background:#eef2f9;color:var(--text);border:1px solid var(--border)}
+.secondary:active{transform:scale(.98);background:#e4e9f2}
+.danger{background:var(--danger-bg);color:var(--danger)}
+.danger:active{transform:scale(.98)}
+button:disabled{opacity:.55;cursor:not-allowed;transform:none !important}
+
 .page{display:none}
-.page.active{display:block}
-.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:14px;border:1px solid #e1e6ee}
-.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-input,textarea{display:block;width:100%;padding:13px 14px;margin:9px 0;border:1px solid #ccd4df;border-radius:10px;font-size:16px;font-family:inherit}
+.page.active{display:block;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{background:var(--surface);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px;
+  border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+input,textarea,select{display:block;width:100%;padding:13px 14px;margin:9px 0;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:16px;
+  font-family:inherit;background:#fbfcfe;transition:border-color .15s ease,box-shadow .15s ease}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(22,102,217,.15);background:#fff}
 textarea{resize:vertical}
-.primary{width:100%;margin-top:6px}
 #reader{max-width:520px;margin:14px auto}
-.result{padding:16px;border-radius:12px;background:#eef2f6;text-align:center;margin:12px 0;line-height:1.7}
-.result.ok{background:#e4f7e9}
-.result.warn{background:#fff4d6}
-.result.bad{background:#ffe7e7}
+.result{padding:16px;border-radius:var(--radius-md);background:#eef2f6;text-align:center;
+  margin:12px 0;line-height:1.7;font-weight:600}
+.result.ok{background:#e4f7e9;color:#1a8f4c}
+.result.warn{background:#fff4d6;color:#9a6b00}
+.result.bad{background:#ffe7e7;color:#b00020}
 
 /* --- Overlay ceklis di tengah area kamera saat scan berhasil/gagal --- */
-.reader-wrap{position:relative;max-width:520px;margin:14px auto}
+.reader-wrap{position:relative;max-width:520px;margin:14px auto;border-radius:var(--radius-md);overflow:hidden}
 .reader-wrap #reader{margin:0}
 .scan-overlay{
   position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:10px;
-  background:rgba(255,255,255,.94);border-radius:12px;
+  background:rgba(255,255,255,.94);border-radius:var(--radius-md);
   opacity:0;pointer-events:none;transform:scale(.96);
   transition:opacity .18s ease,transform .18s ease;
   z-index:5;padding:16px;text-align:center;
@@ -56,74 +111,115 @@ textarea{resize:vertical}
   100%{transform:scale(1)}
 }
 
-/* --- Daftar peserta: layout rapi (QR | mini kartu ID | info | aksi) --- */
+/* --- Daftar peserta --- */
 .participant{
   display:grid;
   grid-template-columns:64px 56px 1fr auto;
   align-items:center;
   gap:14px;
-  border-top:1px solid #e5e8ed;
-  padding:12px 0;
+  border-top:1px solid var(--border);
+  padding:14px 0;
 }
 .participant:first-child{border-top:0}
-.qr-thumb{width:64px;height:64px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.qr-thumb{width:64px;height:64px;background:#fff;border:1px solid var(--border);border-radius:10px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .qr-thumb canvas{width:100%;height:100%;display:block}
 
-.card-thumb{width:56px;height:89px;background:#fff;border:1px solid #e5e8ed;border-radius:8px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#697386;text-align:center;line-height:1.3}
+.card-thumb{width:56px;height:89px;background:#fff;border:1px solid var(--border);border-radius:10px;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:var(--muted);text-align:center;line-height:1.3;transition:transform .12s ease}
+.card-thumb:active{transform:scale(.95)}
 .card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .participant .info small{display:block;margin-top:2px}
-.participant .info input{margin:4px 0;font-size:14px;padding:8px 10px}
+.participant .info input{margin:4px 0;font-size:14px;padding:9px 10px}
 .actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
-.actions button{padding:8px 10px;font-size:12px;min-height:auto;border-radius:8px;white-space:nowrap}
+.actions button{padding:9px 11px;font-size:12px;min-height:auto;border-radius:9px;white-space:nowrap}
 .qr-error{color:#b00020;font-size:12px}
 
 .toggle-row{cursor:pointer}
+.import-box{margin-top:6px}
 .import-box textarea{min-height:90px}
-.import-box input[type=file]{padding:10px}
-.import-manual{margin-top:14px;border-top:1px solid #e5e8ed;padding-top:10px}
-.import-manual summary{cursor:pointer;font-weight:700;color:#1666d9}
+.import-box input[type=file]{padding:10px;background:#fbfcfe}
+.import-manual{margin-top:14px;border-top:1px solid var(--border);padding-top:10px}
+.import-manual summary{cursor:pointer;font-weight:700;color:var(--primary)}
 #importPreview{margin:8px 0}
 #importResult{margin-top:6px}
-#cardLogoPreview{width:56px;height:56px;object-fit:contain;border:1px solid #e5e8ed;border-radius:8px;background:#fff}
+#cardLogoPreview{width:56px;height:56px;object-fit:contain;border:1px solid var(--border);border-radius:10px;background:#fff}
 #downloadAllCards{white-space:nowrap}
-.field-label{display:block;font-size:13px;font-weight:700;color:#697386;margin:10px 0 -2px}
+.field-label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 -2px}
 .foto-preview-row{margin:8px 0}
-#fotoPreview,.edit-foto-preview{width:56px;height:56px;object-fit:cover;border:1px solid #e5e8ed;border-radius:8px;background:#fff}
+#fotoPreview,.edit-foto-preview{width:56px;height:56px;object-fit:cover;border:1px solid var(--border);border-radius:10px;background:#fff}
 .edit-mode .field-label{margin-top:6px}
 .row-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-/* --- Modal preview Kartu ID --- */
-.modal{position:fixed;inset:0;background:rgba(10,14,20,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
-.modal[hidden]{display:none !important}
-.modal-inner{background:#fff;border-radius:16px;padding:16px;max-width:420px;width:100%;text-align:center;max-height:92vh;overflow:auto}
-.modal-inner h2{margin:0;font-size:18px}
-.modal-inner img{max-width:100%;max-height:60vh;border-radius:10px;margin:12px 0;display:block;margin-left:auto;margin-right:auto;border:1px solid #e5e8ed}
+/* --- Editor visual Template Kartu ID --- */
+#templateEditorWrap{margin-top:14px}
+#templateEditor{
+  position:relative;width:100%;max-width:300px;margin:8px auto 4px;
+  background-size:100% 100%;background-repeat:no-repeat;background-color:#fff;
+  border-radius:var(--radius-md);overflow:hidden;border:1.5px solid var(--border);
+  box-shadow:var(--shadow-sm);touch-action:none;user-select:none;
+}
+.tpl-el{position:absolute;cursor:grab;touch-action:none}
+.tpl-el:active{cursor:grabbing}
+.tpl-box{background:rgba(22,102,217,.16);border:2px dashed rgba(22,102,217,.85);
+  border-radius:7px;display:flex;align-items:flex-start;justify-content:center;padding-top:3px}
+.tpl-text{background:rgba(247,168,35,.24);border:1.5px dashed rgba(214,120,10,.9);
+  border-radius:7px;padding:3px 7px;transform:translate(-50%,-50%);white-space:nowrap}
+.tpl-label{font-size:10px;font-weight:800;color:var(--primary-dark);background:rgba(255,255,255,.88);
+  padding:1px 5px;border-radius:5px;pointer-events:none}
+.tpl-resize{position:absolute;right:-6px;bottom:-6px;width:16px;height:16px;background:var(--primary);
+  border:2px solid #fff;border-radius:50%;cursor:nwse-resize;box-shadow:var(--shadow-sm)}
+.tpl-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tpl-toolbar button{flex:1;min-width:140px}
 
-.table-wrap{overflow:auto}
+/* --- Modal preview Kartu ID --- */
+.modal{position:fixed;inset:0;background:rgba(10,14,20,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;backdrop-filter:blur(2px)}
+.modal[hidden]{display:none !important}
+.modal-inner{background:#fff;border-radius:var(--radius-lg);padding:16px;max-width:420px;width:100%;text-align:center;max-height:92vh;overflow:auto;box-shadow:var(--shadow-md)}
+.modal-inner h2{margin:0;font-size:18px}
+.modal-inner img{max-width:100%;max-height:60vh;border-radius:12px;margin:12px 0;display:block;margin-left:auto;margin-right:auto;border:1px solid var(--border)}
+
+.table-wrap{overflow:auto;border-radius:var(--radius-sm)}
 table{width:100%;border-collapse:collapse;min-width:550px}
-th,td{text-align:left;padding:10px;border-bottom:1px solid #e5e8ed}
-.stats{display:flex;margin:12px 0}
-.stats div{background:#eef3f9;border-radius:12px;padding:14px 20px}
-.stats b{display:block;font-size:25px}
-.stats span{font-size:12px;color:#697386}
+th{text-align:left;padding:10px;border-bottom:2px solid var(--border);font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--border)}
+.stats{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+.stats div{background:linear-gradient(135deg,#eef3f9,#e7edf7);border-radius:var(--radius-md);padding:14px 20px;flex:1;min-width:110px}
+.stats b{display:block;font-size:26px;font-weight:800;color:var(--primary-dark)}
+.stats span{font-size:12px;color:var(--muted)}
 .error{color:#b00020}
 button{font-family:inherit}
 
 /* --- Layar Login (Supabase Auth) --- */
-.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:radial-gradient(1200px 700px at 15% 10%, rgba(22,102,217,.10), transparent 55%),
+             radial-gradient(900px 600px at 90% 90%, rgba(247,168,35,.12), transparent 55%),var(--bg)}
 .auth-screen[hidden]{display:none !important}
 .auth-card{max-width:380px;width:100%;text-align:center}
-.auth-card h1{font-size:24px}
+.auth-card h1{font-size:24px;font-weight:800;
+  background:linear-gradient(90deg,var(--primary-dark),var(--primary));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
 .auth-card form{text-align:left;margin-top:14px}
 .auth-user{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .auth-user span{font-size:13px}
-.auth-user button{padding:8px 12px;min-height:auto}
+.auth-user button{padding:9px 13px;min-height:auto}
 #mainApp[hidden]{display:none !important}
 
 @media(max-width:560px){
-  .app{padding:10px}
-  .tab{flex:1;padding:10px 8px;font-size:13px}
-  .card{padding:14px}
+  .app{padding:12px 12px calc(84px + var(--safe-b))}
+  header h1{font-size:21px}
+  .card{padding:15px}
+
+  /* Bottom nav bar ala aplikasi mobile */
+  .tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;
+    border-radius:0;border:0;border-top:1px solid var(--border);
+    background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+    padding:6px 8px calc(6px + var(--safe-b));box-shadow:0 -6px 18px -10px rgba(15,30,70,.25);
+    gap:4px;
+  }
+  .tab{flex-direction:column;font-size:11px;padding:8px 4px;border-radius:12px;gap:2px;
+    display:flex;align-items:center;justify-content:center;min-height:52px}
+  .tab.active{box-shadow:none}
+
   .participant{grid-template-columns:48px 42px 1fr;grid-template-rows:auto auto}
   .qr-thumb{width:48px;height:48px}
   .card-thumb{width:42px;height:67px}
