@@ -248,9 +248,10 @@ $("fotoFile").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   try {
-    // maxDim dinaikkan (480 -> 960) supaya foto tetap tajam/HD saat dicetak
-    // besar di Kartu ID, bukan buram karena diperbesar dari resolusi kecil.
-    pendingFotoDataUrl = await compressImageFile(file, 960, 0.9, { preserveTransparency: true });
+    // maxDim dinaikkan (960 -> 1400) supaya foto tetap tajam/HD walau
+    // dicetak besar di Kartu ID beresolusi tinggi, bukan buram karena
+    // diperbesar dari sumber beresolusi kecil.
+    pendingFotoDataUrl = await compressImageFile(file, 1400, 0.92, { preserveTransparency: true });
     $("fotoPreview").src = pendingFotoDataUrl;
     $("fotoPreviewRow").hidden = false;
   } catch (err) {
@@ -365,12 +366,12 @@ function drawCardBackground(ctx, w, h) {
 }
 
 async function renderIdCard(p, settings) {
-  // Ukuran cetak standar CR80 portrait (5,398 x 8,56 cm), dirender @600dpi
-  // (SCALE=2 dari basis 300dpi) supaya foto & logo tampil HD/tajam saat
-  // dicetak besar, walau ukuran fisik kartu tetap sama seperti kartu ID
-  // pada umumnya.
+  // Ukuran cetak 5 x 8,5 cm (ukuran ID card portrait pada umumnya), dirender
+  // @600dpi (SCALE=2 dari basis 300dpi: 591x1004px) supaya foto & logo
+  // tampil maksimal HD/tajam saat dicetak besar, walau ukuran fisik kartu
+  // tetap 5 x 8,5 cm.
   const SCALE = 2;
-  const W = 638 * SCALE, H = 1013 * SCALE;
+  const W = 591 * SCALE, H = 1004 * SCALE;
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
@@ -684,9 +685,9 @@ async function loadParticipants() {
         btnSave.textContent = "Memproses foto...";
         btnSave.disabled = true;
         try {
-          // maxDim dinaikkan (480 -> 960) supaya foto tetap tajam/HD saat
+          // maxDim dinaikkan (960 -> 1400) supaya foto tetap tajam/HD saat
           // dicetak besar di Kartu ID.
-          payload.foto = await compressImageFile(fotoFile, 960, 0.9, { preserveTransparency: true });
+          payload.foto = await compressImageFile(fotoFile, 1400, 0.92, { preserveTransparency: true });
         } catch (err) {
           btnSave.textContent = "💾 Simpan";
           btnSave.disabled = false;
