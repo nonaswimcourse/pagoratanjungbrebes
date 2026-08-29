@@ -387,12 +387,11 @@ async function renderIdCard(p, settings) {
   drawCardBackground(ctx, W, H);
 
   // --- logo instansi: digambar LANGSUNG tanpa bingkai/pembungkus lingkaran,
-  // proporsi asli logo dijaga (contain-fit) supaya tidak gepeng/pecah, dan
-  // diberi ruang lebih lega di area atas kartu ---
-  const logoMaxW = W * 0.46;
-  const logoMaxH = 118 * SCALE;
-  const logoTopY = 50 * SCALE;
-  let cursorY = logoTopY + 34 * SCALE; // posisi default judul kalau logo kosong
+  // proporsi asli logo dijaga (contain-fit) supaya tidak gepeng/pecah ---
+  const logoMaxW = W * 0.44;
+  const logoMaxH = 96 * SCALE;
+  const logoTopY = 40 * SCALE;
+  let cursorY = logoTopY + 30 * SCALE; // posisi default judul kalau logo kosong
 
   if (settings.logo) {
     try {
@@ -401,54 +400,90 @@ async function renderIdCard(p, settings) {
       const iw = img.width * ratio, ih = img.height * ratio;
       const drawX = W / 2 - iw / 2;
       ctx.drawImage(img, drawX, logoTopY, iw, ih);
-      cursorY = logoTopY + ih + 42 * SCALE;
+      cursorY = logoTopY + ih + 34 * SCALE;
     } catch (err) {
       console.error("Gagal memuat logo di kartu:", err);
     }
   }
 
+  // --- SEMUA elemen di bawah ini (judul, sub-judul, foto, QR, nama, asal
+  // sekolah) benar-benar DI-TENGAHKAN pada sumbu X = W/2, satu kolom
+  // vertikal tunggal, supaya tidak ada lagi yang "kelihatan" tidak center
+  // seperti saat foto & QR berdampingan sebelumnya. ---
+  const centerX = W / 2;
+
   // --- judul ---
   ctx.textAlign = "center";
   ctx.fillStyle = "#123fa8";
-  ctx.font = `bold ${34 * SCALE}px Arial, sans-serif`;
-  const judulLines = wrapLines(ctx, settings.judul || "", W - 80 * SCALE);
+  ctx.font = `bold ${30 * SCALE}px Arial, sans-serif`;
+  const judulLines = wrapLines(ctx, settings.judul || "", W - 70 * SCALE);
   judulLines.forEach(line => {
-    ctx.fillText(line, W / 2, cursorY);
-    cursorY += 40 * SCALE;
+    ctx.fillText(line, centerX, cursorY);
+    cursorY += 35 * SCALE;
   });
 
   // --- sub-judul (hitam tebal, senada dengan versi cetak KKG) ---
-  cursorY += 8 * SCALE;
+  cursorY += 6 * SCALE;
   ctx.fillStyle = "#1a1a1a";
-  ctx.font = `bold ${22 * SCALE}px Arial, sans-serif`;
-  const subLines = wrapLines(ctx, settings.subjudul || "", W - 80 * SCALE);
+  ctx.font = `bold ${18 * SCALE}px Arial, sans-serif`;
+  const subLines = wrapLines(ctx, settings.subjudul || "", W - 70 * SCALE);
   subLines.forEach(line => {
-    ctx.fillText(line, W / 2, cursorY);
-    cursorY += 28 * SCALE;
+    ctx.fillText(line, centerX, cursorY);
+    cursorY += 23 * SCALE;
   });
 
-  cursorY += 26 * SCALE;
+  cursorY += 18 * SCALE;
 
-  // --- QR code (DI-TENGAHKAN secara horizontal di kolom kiri — bukan rata
-  // kiri lagi — supaya QR, nama, dan asal sekolah semuanya center, sesuai
-  // permintaan, tanpa bertabrakan dengan foto peserta di sisi kanan) ---
-  // Dibungkus kotak putih berbingkai tipis supaya kontras & gampang dipindai,
-  // dan digambar langsung pada ukuran akhirnya (bukan diperbesar dari ukuran
-  // kecil) supaya hasilnya TAJAM, tidak buram.
-  const areaW = W * 0.50;
-  const areaX = W - areaW; // batas kiri area foto = lebar kolom kiri (QR+teks)
+  // --- foto peserta: kotak membulat DI TENGAH kartu (bukan lagi mepet ke
+  // tepi kanan), mode "cover" supaya kotak selalu terisi penuh & rapi
+  // seperti foto formal pada umumnya ---
+  const fotoBoxW = W * 0.56;
+  const fotoBoxH = fotoBoxW * 1.18;
+  const fotoBoxX = centerX - fotoBoxW / 2;
+  const fotoBoxY = cursorY;
+  ctx.fillStyle = "#eef1f7";
+  roundRect(ctx, fotoBoxX, fotoBoxY, fotoBoxW, fotoBoxH, 14 * SCALE);
+  ctx.fill();
 
-  const qrSize = 220 * SCALE;
-  const qrBoxPad = 14 * SCALE;
+  if (p.foto) {
+    try {
+      const img = await loadImage(p.foto);
+      ctx.save();
+      roundRect(ctx, fotoBoxX, fotoBoxY, fotoBoxW, fotoBoxH, 14 * SCALE);
+      ctx.clip();
+      // Mode "cover": foto mengisi penuh kotak (dipotong secukupnya kalau
+      // rasionya beda), supaya hasil selalu rapi & tajam, tidak ada spasi
+      // kosong seperti mode "contain".
+      const ratio = Math.max(fotoBoxW / img.width, fotoBoxH / img.height);
+      const iw = img.width * ratio, ih = img.height * ratio;
+      const drawX = fotoBoxX + (fotoBoxW - iw) / 2;
+      const drawY = fotoBoxY + (fotoBoxH - ih) / 2;
+      ctx.drawImage(img, drawX, drawY, iw, ih);
+      ctx.restore();
+    } catch (err) {
+      console.error("Gagal memuat foto peserta di kartu:", err);
+    }
+  }
+  ctx.lineWidth = 2 * SCALE;
+  ctx.strokeStyle = "#d8dce8";
+  roundRect(ctx, fotoBoxX, fotoBoxY, fotoBoxW, fotoBoxH, 14 * SCALE);
+  ctx.stroke();
+
+  cursorY = fotoBoxY + fotoBoxH + 22 * SCALE;
+
+  // --- QR code, DI TENGAH kartu (centerX yang sama persis dengan judul,
+  // foto, nama, & asal sekolah) ---
+  const qrSize = 130 * SCALE;
+  const qrBoxPad = 10 * SCALE;
   const qrBoxSize = qrSize + qrBoxPad * 2;
-  const qrBoxX = (areaX - qrBoxSize) / 2; // center di dalam kolom kiri
+  const qrBoxX = centerX - qrBoxSize / 2;
   const qrBoxY = cursorY;
   ctx.fillStyle = "#ffffff";
-  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * SCALE);
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 14 * SCALE);
   ctx.fill();
   ctx.lineWidth = 2 * SCALE;
   ctx.strokeStyle = "#d8dce8";
-  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 16 * SCALE);
+  roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 14 * SCALE);
   ctx.stroke();
 
   const tmp = document.createElement("div");
@@ -462,52 +497,28 @@ async function renderIdCard(p, settings) {
     document.body.removeChild(tmp);
   }
 
-  // --- foto peserta (kanan, besar, menyentuh tepi kanan & bawah kartu) ---
-  // Area dihitung SEBELUM teks nama/sekolah supaya lebar teks bisa
-  // menghindari tumpang tindih dengan foto.
-  const areaTop = qrBoxY;
-  const areaH = H - areaTop;
+  cursorY = qrBoxY + qrBoxSize + 26 * SCALE;
 
-  // --- nama & asal sekolah, DI-TENGAHKAN (center) mengikuti kolom kiri yang
-  // sama dengan QR, bukan rata kiri lagi ---
-  const textCenterX = areaX / 2;
-  const textMaxWidth = areaX - 32 * SCALE;
-  let textY = qrBoxY + qrBoxSize + 40 * SCALE;
+  // --- nama & asal sekolah, DI TENGAH (centerX yang sama) ---
+  const textMaxWidth = W - 64 * SCALE;
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#123fa8";
-  ctx.font = `bold ${20 * SCALE}px Arial, sans-serif`;
+  ctx.font = `bold ${19 * SCALE}px Arial, sans-serif`;
   const namaLines = wrapLines(ctx, p.nama.toUpperCase(), textMaxWidth);
   namaLines.forEach(line => {
-    ctx.fillText(line, textCenterX, textY);
-    textY += 26 * SCALE;
+    ctx.fillText(line, centerX, cursorY);
+    cursorY += 24 * SCALE;
   });
 
-  textY += 6 * SCALE;
+  cursorY += 5 * SCALE;
   ctx.fillStyle = "#1a1a1a";
-  ctx.font = `bold ${15 * SCALE}px Arial, sans-serif`;
+  ctx.font = `bold ${14 * SCALE}px Arial, sans-serif`;
   const sekolahLines = wrapLines(ctx, (p.asal_sekolah || "-").toUpperCase(), textMaxWidth);
   sekolahLines.forEach(line => {
-    ctx.fillText(line, textCenterX, textY);
-    textY += 20 * SCALE;
+    ctx.fillText(line, centerX, cursorY);
+    cursorY += 18 * SCALE;
   });
-
-  // Foto digambar PALING TERAKHIR (di atas segalanya) supaya menutupi sisa
-  // gelombang dekoratif pojok kanan-bawah secara alami, persis seperti pada
-  // desain acuan. Mode "contain" (bukan "cover") supaya foto tidak pernah
-  // terpotong, hanya diperbesar sepenuhnya sampai menyentuh tepi kartu.
-  if (p.foto) {
-    try {
-      const img = await loadImage(p.foto);
-      const ratio = Math.min(areaW / img.width, areaH / img.height);
-      const iw = img.width * ratio, ih = img.height * ratio;
-      const drawX = areaX + (areaW - iw);   // rata kanan, menyentuh tepi kartu
-      const drawY = areaTop + (areaH - ih); // rata bawah, menyentuh garis paling bawah kartu
-      ctx.drawImage(img, drawX, drawY, iw, ih);
-    } catch (err) {
-      console.error("Gagal memuat foto peserta di kartu:", err);
-    }
-  }
 
   ctx.restore(); // lepas clip bentuk kartu
 
@@ -520,6 +531,7 @@ async function renderIdCard(p, settings) {
 
   return canvas;
 }
+
 
 function downloadCanvas(canvas, filename) {
   const link = document.createElement("a");
