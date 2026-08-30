@@ -142,7 +142,6 @@ function renderAppIdentity() {
   const nama = (appIdentity.nama || DEFAULT_APP_IDENTITY.nama).trim() || DEFAULT_APP_IDENTITY.nama;
   profileMenuAppName.textContent = nama;
   if (headerAppTitle) headerAppTitle.textContent = nama;
-  document.title = nama;
   if (appIdentity.logo) {
     appLogoBadgeImg.src = appIdentity.logo;
     appLogoBadgeImg.hidden = false;
@@ -167,7 +166,9 @@ function applyRemoteAppIdentity(nilai) {
 
 function openAppIdentityBox() {
   appNameInput.value = appIdentity.nama || "";
-  pendingAppLogo = undefined;
+  // CATATAN: jangan reset pendingAppLogo di sini — fungsi ini juga dipanggil tepat
+  // setelah pengguna memilih logo baru (lihat appLogoFile "change"), jadi kalau
+  // direset di sini logo yang baru dipilih akan terhapus lagi sebelum sempat disimpan.
   appIdentityBox.hidden = false;
 }
 function closeAppIdentityBox() {
@@ -209,7 +210,12 @@ appLogoClearBtn.addEventListener("click", (e) => {
 
 appIdentityEditBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  if (appIdentityBox.hidden) openAppIdentityBox(); else closeAppIdentityBox();
+  if (appIdentityBox.hidden) {
+    pendingAppLogo = undefined; // buka form "bersih", tanpa bawa perubahan logo yang belum sengaja ada
+    openAppIdentityBox();
+  } else {
+    closeAppIdentityBox();
+  }
 });
 
 appIdentityCancel.addEventListener("click", (e) => {
