@@ -447,6 +447,23 @@ section{padding:120px 0;position:relative;}
   margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;
   color:var(--muted);text-align:center;padding:0 10px;
 }
+/* Foto isi mengambang di sisi teks (gaya koran/majalah), bukan blok penuh
+   di antara paragraf — teks membungkus di sekelilingnya biar lebih profesional. */
+.article-content-image.float-left,
+.article-content-image.float-right{
+  width:42%;max-width:320px;margin:6px 0 16px;
+}
+.article-content-image.float-left{float:left;margin-right:24px;}
+.article-content-image.float-right{float:right;margin-left:24px;}
+.article-content-image.float-left img,
+.article-content-image.float-right img{aspect-ratio:4/3;}
+.article-body::after{content:"";display:table;clear:both;}
+@media(max-width:600px){
+  .article-content-image.float-left,
+  .article-content-image.float-right{
+    float:none;width:100%;max-width:none;margin:20px 0;
+  }
+}
 /* ---------------- SHARE BOX (Salin Link & WhatsApp di halaman kegiatan) ---------------- */
 .share-box{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:32px;}
 .share-label{
