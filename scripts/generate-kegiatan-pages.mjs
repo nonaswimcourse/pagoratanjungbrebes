@@ -132,15 +132,16 @@ function renderPage(item, others) {
   const title = `${item.title} — PAGORA TANJUNG`;
   const desc = (item.excerpt || item.body[0] || '').slice(0, 200);
 
-  // ---- sisipkan foto isi di tengah artikel (setelah paragraf pertama) ----
-  // biar tampilan berita lebih profesional: foto judul di atas, foto isi di tengah teks.
+  // ---- sisipkan foto isi mengambang di sisi teks (gaya koran/majalah) ----
+  // biar tampilan berita lebih profesional: foto judul di atas, foto isi
+  // mengambang kecil di sisi kiri setelah paragraf pertama, teks membungkus di sekelilingnya.
   const contentImageHtml = item.imageIsi ? `
-    <figure class="article-content-image">
+    <figure class="article-content-image float-left">
       <img src="${escapeHtml(item.imageIsi)}" alt="${escapeHtml(item.captionIsi || item.title)}" loading="lazy">
       ${item.captionIsi ? `<figcaption>${escapeHtml(item.captionIsi)}</figcaption>` : ''}
     </figure>` : '';
   const paragraphs = item.body.map(p => `<p>${escapeHtml(p)}</p>`);
-  const insertAt = paragraphs.length > 1 ? Math.ceil(paragraphs.length / 2) : paragraphs.length;
+  const insertAt = paragraphs.length > 1 ? 1 : paragraphs.length;
   const bodyHtml = contentImageHtml
     ? [...paragraphs.slice(0, insertAt), contentImageHtml, ...paragraphs.slice(insertAt)].join('')
     : paragraphs.join('');
