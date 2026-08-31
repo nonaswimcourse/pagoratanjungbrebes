@@ -1570,9 +1570,12 @@ async function loadAttendance() {
   }
 
   try {
+    // Tanggal tetap terbaru dulu, tapi DALAM satu tanggal yang sama jam diurutkan
+    // naik (ascending) supaya yang absen PERTAMA/paling pagi tampil di baris PALING ATAS,
+    // bukan di bawah.
     const { data, error } = await db.from("kehadiran")
       .select("id,tanggal,jam,peserta(nama,asal_sekolah)")
-      .order("tanggal", { ascending: false }).order("jam", { ascending: false });
+      .order("tanggal", { ascending: false }).order("jam", { ascending: true });
     if (error) {
       box.innerHTML = `<tr><td colspan="5">Gagal memuat: ${esc(error.message)}</td></tr>`;
       return;
