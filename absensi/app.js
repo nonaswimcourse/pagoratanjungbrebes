@@ -1721,8 +1721,16 @@ $("downloadRekapPdf").addEventListener("click", () => {
         formatTanggalPendek(x.tanggal) || "-",
         jamPendek(x.jam)
       ]),
-      styles: { font: "helvetica", fontSize: 10, cellPadding: 2.2 },
+      // Tabel diperkecil (font & padding lebih rapat) supaya lebih ringkas,
+      // dan kolom Tanggal dikasih lebar tetap yang cukup ("17 September 2026")
+      // supaya tanggal SELALU muat dalam SATU baris, tidak pernah terpotong ke baris berikutnya.
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 1.6 },
       headStyles: { fillColor: [18, 63, 168], textColor: 255, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 8, halign: "center" },
+        3: { cellWidth: 34, halign: "center", overflow: "visible" },
+        4: { cellWidth: 14, halign: "center" }
+      },
       margin: { left: 15, right: 15 }
     });
 
