@@ -1761,6 +1761,26 @@ $("downloadRekapPdf").addEventListener("click", () => {
       }
     }
 
+    // Hitung dulu geometri stempel SEBELUM menulis Nama/NIP, supaya kalau stempel
+    // (yang tingginya tetap ~32mm apa pun tinggi tanda tangan) menjorok sampai ke
+    // bawah tanda tangan, posisi Nama/NIP otomatis digeser turun secukupnya —
+    // supaya teks TIDAK PERNAH menempel/tertimpa stempel, ada jarak aman.
+    let stampW = 0, stampH = 0, stampX = 0, stampY = 0, stampReady = false;
+    try {
+      stampW = 32;
+      const stampProps = doc.getImageProperties(DEFAULT_STAMP_DATA_URL);
+      stampH = (stampProps.height / stampProps.width) * stampW;
+      stampX = signX - stampW * 0.55;
+      stampY = ttdY + (ttdH / 2) - (stampH / 2) - 2;
+      stampReady = true;
+
+      const stampBottom = stampY + stampH;
+      const jarakAman = 4;
+      if (namaY < stampBottom + jarakAman) namaY = stampBottom + jarakAman;
+    } catch (err) {
+      console.error("Gagal menghitung geometri stempel:", err);
+    }
+
     doc.setFont("helvetica", "bold");
     doc.text(rekapSettings.namaKetua || "-", signX, namaY);
     if (rekapSettings.nipKetua) {
@@ -1772,15 +1792,12 @@ $("downloadRekapPdf").addEventListener("click", () => {
     // aplikasi, tidak tergantung pengaturan pengguna), digambar PALING TERAKHIR
     // supaya tumpang tindih di ATAS tanda tangan, persis seperti stempel asli
     // yang dibubuhkan menimpa tanda tangan pada dokumen cetak.
-    try {
-      const stampW = 32;
-      const stampProps = doc.getImageProperties(DEFAULT_STAMP_DATA_URL);
-      const stampH = (stampProps.height / stampProps.width) * stampW;
-      const stampX = signX - stampW * 0.55;
-      const stampY = ttdY + (ttdH / 2) - (stampH / 2) - 2;
-      doc.addImage(DEFAULT_STAMP_DATA_URL, "PNG", stampX, stampY, stampW, stampH);
-    } catch (err) {
-      console.error("Gagal menambahkan stempel ke PDF:", err);
+    if (stampReady) {
+      try {
+        doc.addImage(DEFAULT_STAMP_DATA_URL, "PNG", stampX, stampY, stampW, stampH);
+      } catch (err) {
+        console.error("Gagal menambahkan stempel ke PDF:", err);
+      }
     }
 
     doc.save(`Rekap_Kehadiran_${fileTag}.pdf`);
