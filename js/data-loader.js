@@ -32,6 +32,14 @@ function formatTanggalIndonesia(v) {
 
 const CAT_TO_TAG = { pelatihan: 'Pelatihan', lomba: 'Lomba', acara: 'Acara' };
 
+// Pecah kolom "isi" jadi paragraf. Kalau kosong (mis. kegiatan lama yang
+// belum sempat diisi lengkap), tampilkan keterangan alih-alih halaman kosong
+// tanpa penjelasan sama sekali.
+function splitParagraf(isi) {
+  const parts = String(isi || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  return parts.length ? parts : ['Isi berita untuk kegiatan ini belum dilengkapi.'];
+}
+
 function mapRowToGaleriItem(row, index) {
   const gClasses = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'];
   return {
@@ -45,7 +53,7 @@ function mapRowToGaleriItem(row, index) {
     imageIsi: row.gambar_isi || row.gambar,
     captionIsi: row.keterangan_isi || '',
     excerpt: row.ringkasan || '',
-    body: (row.isi || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
+    body: splitParagraf(row.isi)
   };
 }
 

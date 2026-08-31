@@ -188,6 +188,16 @@ kegiatanForm.addEventListener('submit', async (e) => {
     const editingId = editingIdInput.value;
     const tag = document.getElementById('fTag').value;
     const title = document.getElementById('fTitle').value.trim();
+    const isiBerita = document.getElementById('fBody').value.trim();
+
+    // Textarea "required" browser hanya mengecek ada isinya (spasi pun lolos),
+    // tapi setelah di-trim() bisa jadi kosong dan tersimpan sebagai isi berita
+    // kosong ke database (artikel jadi cuma tampil foto+judul, isi blank).
+    // Jadi dicek ulang di sini secara eksplisit sebelum dikirim ke Supabase.
+    if (!isiBerita) {
+      throw new Error('Isi berita tidak boleh kosong. Mohon tulis isi kegiatan terlebih dahulu.');
+    }
+
     const payload = {
       judul: title,
       kategori: TAG_TO_CAT[tag],
@@ -195,7 +205,7 @@ kegiatanForm.addEventListener('submit', async (e) => {
       tanggal: document.getElementById('fDate').value,
       upload_time: waktuUpload(),
       ringkasan: document.getElementById('fExcerpt').value.trim(),
-      isi: document.getElementById('fBody').value.trim(),
+      isi: isiBerita,
       keterangan_isi: document.getElementById('fCaption2').value.trim()
     };
 
