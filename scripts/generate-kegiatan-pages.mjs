@@ -118,7 +118,10 @@ function normalizeItem(row, index) {
     imageIsi: row.gambar_isi || row.gambar,
     captionIsi: row.keterangan_isi || '',
     excerpt: row.ringkasan || '',
-    body: String(row.isi || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
+    // Dipisah per baris baru tunggal (bukan cuma baris kosong ganda) supaya kalau
+    // admin cuma menekan Enter satu kali antar paragraf, hasil generate tetap rapi
+    // jadi paragraf terpisah — sama seperti logika di js/data-loader.js.
+    body: String(row.isi || '').split(/\n+/).map(p => p.trim()).filter(Boolean)
   };
 }
 
