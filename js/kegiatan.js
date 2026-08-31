@@ -37,15 +37,16 @@ async function renderArticle() {
   document.title = item.title + ' — PAGORA TANJUNG';
   document.getElementById('pageTitle').textContent = item.title + ' — PAGORA TANJUNG';
 
-  // ---- sisipkan foto isi di tengah artikel (setelah paragraf pertama) ----
-  // biar tampilan berita lebih profesional: foto judul di atas, foto isi di tengah teks.
+  // ---- sisipkan foto isi mengambang di sisi teks (gaya koran/majalah) ----
+  // biar tampilan berita lebih profesional: foto judul di atas, foto isi
+  // mengambang kecil di sisi kiri setelah paragraf pertama, teks membungkus di sekelilingnya.
   const contentImageHtml = item.imageIsi ? `
-    <figure class="article-content-image">
+    <figure class="article-content-image float-left">
       <img src="${item.imageIsi}" alt="${item.captionIsi || item.title}" loading="lazy">
       ${item.captionIsi ? `<figcaption>${item.captionIsi}</figcaption>` : ''}
     </figure>` : '';
   const paragraphs = item.body.map(p => `<p>${p}</p>`);
-  const insertAt = paragraphs.length > 1 ? Math.ceil(paragraphs.length / 2) : paragraphs.length;
+  const insertAt = paragraphs.length > 1 ? 1 : paragraphs.length;
   const bodyHtml = contentImageHtml
     ? [...paragraphs.slice(0, insertAt), contentImageHtml, ...paragraphs.slice(insertAt)].join('')
     : paragraphs.join('');
