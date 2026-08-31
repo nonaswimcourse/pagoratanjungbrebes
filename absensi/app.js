@@ -1776,21 +1776,6 @@ $("downloadRekapPdf").addEventListener("click", () => {
     }
 
     doc.save(`Rekap_Kehadiran_${fileTag}.pdf`);
-
-    // Setelah PDF berhasil diunduh, tawarkan untuk mengosongkan data kehadiran
-    // yang baru saja diekspor supaya penyimpanan di Supabase tidak terus menumpuk.
-    // Kalau dipilih "Batal", data dibiarkan tetap ada seperti biasa.
-    const label = selectedTanggal === "semua" ? "SEMUA tanggal" : formatTanggalPendek(selectedTanggal);
-    const hapusIds = rows.map(r => r.id);
-    setTimeout(() => {
-      const hapus = confirm(
-        `PDF berhasil diunduh.\n\n` +
-        `Hapus ${hapusIds.length} data kehadiran untuk ${label} dari database sekarang, ` +
-        `agar hemat penyimpanan? Data peserta tidak akan terpengaruh.\n\n` +
-        `(Pilih Batal kalau ingin datanya tetap disimpan.)`
-      );
-      if (hapus) deleteAttendanceRows(hapusIds, { silent: true });
-    }, 300);
   } catch (err) {
     console.error("Gagal membuat PDF:", err);
     alert("Gagal membuat PDF: " + err.message);
