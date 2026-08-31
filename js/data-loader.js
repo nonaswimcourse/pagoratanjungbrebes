@@ -32,11 +32,14 @@ function formatTanggalIndonesia(v) {
 
 const CAT_TO_TAG = { pelatihan: 'Pelatihan', lomba: 'Lomba', acara: 'Acara' };
 
-// Pecah kolom "isi" jadi paragraf. Kalau kosong (mis. kegiatan lama yang
-// belum sempat diisi lengkap), tampilkan keterangan alih-alih halaman kosong
-// tanpa penjelasan sama sekali.
+// Pecah kolom "isi" jadi paragraf. Dipisah per baris baru tunggal (bukan
+// cuma baris kosong ganda) supaya kalau admin cuma menekan Enter satu kali
+// antar paragraf di form, tampilannya tetap rapi jadi paragraf terpisah,
+// bukan menumpuk jadi satu blok teks panjang.
+// Kalau kosong (mis. kegiatan lama yang belum sempat diisi lengkap),
+// tampilkan keterangan alih-alih halaman kosong tanpa penjelasan sama sekali.
 function splitParagraf(isi) {
-  const parts = String(isi || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const parts = String(isi || '').split(/\n+/).map(p => p.trim()).filter(Boolean);
   return parts.length ? parts : ['Isi berita untuk kegiatan ini belum dilengkapi.'];
 }
 
