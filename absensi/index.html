@@ -14,6 +14,9 @@
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'"></script>
+  <!-- Verifikasi wajah saat absen (lihat FACE_MODEL_URL di app.js untuk sumber model) -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"
+    onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/face-api.min.js'"></script>
 </head>
 <body>
 
@@ -95,6 +98,10 @@
           </div>
         </div>
         <div id="result" class="result">Menunggu scan...</div>
+        <!-- Muncul HANYA saat verifikasi wajah gagal (tidak cocok / tak terdeteksi),
+             supaya petugas yang sedang login bisa tetap mengabsenkan secara manual
+             kalau memang wajah susah dikenali (pencahayaan, masker, dll). -->
+        <button id="overrideFaceBtn" class="secondary" hidden>✅ Tetap Absenkan (Lewati Verifikasi Wajah)</button>
         <button id="startScan" class="primary">Mulai Kamera</button>
         <button id="stopScan" class="secondary">Matikan Kamera</button>
       </div>

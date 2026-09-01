@@ -1354,6 +1354,101 @@ $("importTextBtn").addEventListener("click", async () => {
   loadParticipants();
 });
 
+// ============ VERIFIKASI WAJAH (FACE ID) SAAT ABSEN ============
+// Tambahan di atas scan QR: setelah QR terbaca & cocok dengan peserta,
+// kalau peserta itu SUDAH punya foto terdaftar, wajah di depan kamera
+// dibandingkan dulu dengan foto tersebut (pakai face-api.js, dimuat dari
+// CDN sama seperti library lain di app ini — supabase, html5-qrcode, dst).
+//
+// Aturan (sudah dikonfirmasi ke panitia):
+//  - Wajah TIDAK cocok -> absen DITOLAK, harus scan/verifikasi ulang.
+//  - Peserta belum punya foto terdaftar -> verifikasi dilewati, absen
+//    tetap jalan normal lewat QR saja.
+//
+// CATATAN JARINGAN: model wajah (±6-7MB) diambil dari CDN publik saat
+// pertama kali dipakai, butuh koneksi internet, sama seperti QRCode/Excel/
+// PDF di app ini. Kalau jaringan sekolah memblokir jsdelivr/cdnjs, unduh isi
+// https://github.com/justadudewhohacks/face-api.js-models lalu host sendiri
+// (mis. taruh di folder /absensi/face-models/), lalu ganti FACE_MODEL_URL.
+const FACE_MODEL_URL = "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master";
+// Ambang jarak wajah (euclidean distance) — makin KECIL makin ketat.
+// 0.5 tergolong ketat, 0.6 lazim dipakai sebagai default face-api.js.
+const FACE_MATCH_THRESHOLD = 0.5;
+
+let faceModelsReady = null; // Promise, supaya loadFaceModels() aman dipanggil berkali-kali
+function loadFaceModels() {
+  if (!faceModelsReady) {
+    faceModelsReady = (async () => {
+      if (typeof faceapi === "undefined") {
+        throw new Error("Library verifikasi wajah gagal dimuat (cek koneksi internet).");
+      }
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL)
+      ]);
+    })();
+  }
+  return faceModelsReady;
+}
+
+// Descriptor wajah dari foto pendaftaran dihitung sekali per peserta lalu
+// disimpan di memori (bukan ke database) supaya scan berikutnya untuk
+// peserta yang sama tidak perlu dihitung ulang. Nilai "null" di cache
+// berarti: sudah pernah dicoba, tapi wajah tidak terdeteksi di foto itu.
+const faceDescriptorCache = new Map();
+
+async function getRegisteredFaceDescriptor(peserta) {
+  if (faceDescriptorCache.has(peserta.id)) return faceDescriptorCache.get(peserta.id);
+  let descriptor = null;
+  try {
+    const img = await loadImage(peserta.foto);
+    const det = await faceapi
+      .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+    if (det) descriptor = det.descriptor;
+  } catch (err) {
+    console.error("Gagal memproses foto peserta untuk verifikasi wajah:", err);
+  }
+  faceDescriptorCache.set(peserta.id, descriptor);
+  return descriptor;
+}
+
+// Bandingkan wajah di depan kamera (live, dari elemen <video> punya
+// Html5Qrcode) dengan foto terdaftar milik peserta.
+// Return: { ok:true, distance } kalau cocok, atau { ok:false, reason }.
+async function verifyFaceForPeserta(peserta) {
+  const video = document.querySelector("#reader video");
+  if (!video) return { ok: false, reason: "Kamera belum siap, coba lagi." };
+
+  try {
+    await loadFaceModels();
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+
+  const registered = await getRegisteredFaceDescriptor(peserta);
+  if (!registered) {
+    return { ok: false, reason: "Foto peserta tidak terdeteksi wajahnya. Hubungi panitia untuk perbarui foto." };
+  }
+
+  const liveDet = await faceapi
+    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  if (!liveDet) {
+    return { ok: false, reason: "Wajah tidak terdeteksi di kamera. Posisikan wajah di tengah, lalu coba lagi." };
+  }
+
+  const distance = faceapi.euclideanDistance(registered, liveDet.descriptor);
+  if (distance > FACE_MATCH_THRESHOLD) {
+    return { ok: false, reason: "Wajah tidak cocok dengan foto terdaftar." };
+  }
+  return { ok: true, distance };
+}
+
 // ============ SCAN ============
 
 // ============ OVERLAY CEKLIS DI TENGAH AREA SCAN ============
@@ -1387,6 +1482,7 @@ function hideScanOverlay() {
 async function startScanner() {
   if (scanning) return;
   hideScanOverlay();
+  hideOverrideFaceBtn();
   $("result").textContent = "Membuka kamera...";
   scanner = new Html5Qrcode("reader");
   try {
@@ -1398,6 +1494,9 @@ async function startScanner() {
     );
     scanning = true;
     $("result").textContent = "Kamera aktif. Silakan scan QR.";
+    // Mulai unduh model verifikasi wajah di latar belakang (tidak menunggu),
+    // supaya pas scan pertama yang butuh verifikasi tidak nunggu lama.
+    loadFaceModels().catch(err => console.error("Gagal memuat model wajah:", err));
   } catch (err) {
     $("result").textContent = "Kamera gagal dibuka. Pastikan izin kamera aktif dan gunakan HTTPS.";
   }
@@ -1408,6 +1507,7 @@ async function stopScanner() {
   try { await scanner.stop(); scanner.clear(); } catch {}
   scanning = false;
   hideScanOverlay();
+  hideOverrideFaceBtn();
   $("result").textContent = "Kamera dimatikan.";
 }
 
@@ -1428,34 +1528,9 @@ function localDateStr(d = new Date()) {
   return new Date(d.getTime() - offsetMs).toISOString().slice(0, 10);
 }
 
-async function handleScan(code) {
-  if (!requireDb()) return showResult(configError, "bad");
-  const now = Date.now();
-  if (code === lastCode && now - lastScanAt < 3000) return;
-  lastCode = code; lastScanAt = now;
-
-  const { data: peserta, error } = await db
-    .from("peserta").select("*").eq("kode_qr", code).maybeSingle();
-
-  if (error) {
-    showScanOverlay("bad", "GAGAL", "Gagal membaca data peserta.");
-    return showResult("Gagal membaca data peserta: " + error.message, "bad");
-  }
-  if (!peserta) {
-    showScanOverlay("bad", "TIDAK TERDAFTAR", "QR tidak dikenali.");
-    return showResult("QR tidak terdaftar.", "bad");
-  }
-
-  const today = localDateStr();
-  const { data: existing } = await db
-    .from("kehadiran").select("*")
-    .eq("peserta_id", peserta.id).eq("tanggal", today).maybeSingle();
-
-  if (existing) {
-    showScanOverlay("warn", "SUDAH ABSEN", `${peserta.nama} — ${jamPendek(existing.jam)}`);
-    return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${jamPendek(existing.jam)}`, "warn");
-  }
-
+// Simpan kehadiran ke database (dipanggil setelah lolos cek QR + verifikasi
+// wajah, atau langsung kalau peserta belum punya foto terdaftar).
+async function simpanKehadiran(peserta, today) {
   // PENTING: locale "id-ID" menampilkan jam pakai TITIK sebagai pemisah
   // (mis. "07.05"), bukan titik dua ("07:05"). Kolom "jam" di database
   // bertipe time, yang HANYA menerima format "HH:MM" — kalau dulu dipakai
@@ -1496,6 +1571,85 @@ async function handleScan(code) {
   showScanOverlay("ok", "ABSENSI BERHASIL", `${peserta.nama}${peserta.asal_sekolah ? " — " + peserta.asal_sekolah : ""}`);
   showResult(`✅ ABSEN BERHASIL<br><b>${esc(peserta.nama)}</b><br>${esc(peserta.asal_sekolah || "-")}`, "ok");
   loadAttendance();
+}
+
+// Kode QR yang sedang dalam proses verifikasi wajah — dipakai supaya scan
+// beruntun dari html5-qrcode (sebelum verifikasi selesai) tidak diproses dobel.
+let verifyingCode = null;
+
+// Tombol override manual: muncul saat verifikasi wajah gagal, supaya petugas
+// (yang sudah login) bisa tetap mengabsenkan pakai QR saja kalau memang wajah
+// susah dikenali kamera (pencahayaan gelap, masker, foto lama, dll). Dipasang
+// per-percobaan scan (bukan tombol permanen) supaya tidak salah kepencet
+// untuk peserta lain setelah pindah scan.
+function showOverrideFaceBtn(peserta, today) {
+  const btn = $("overrideFaceBtn");
+  if (!btn) return;
+  btn.hidden = false;
+  btn.onclick = async () => {
+    btn.hidden = true;
+    btn.onclick = null;
+    await simpanKehadiran(peserta, today);
+  };
+}
+function hideOverrideFaceBtn() {
+  const btn = $("overrideFaceBtn");
+  if (!btn) return;
+  btn.hidden = true;
+  btn.onclick = null;
+}
+
+async function handleScan(code) {
+  if (!requireDb()) return showResult(configError, "bad");
+  const now = Date.now();
+  if (code === lastCode && now - lastScanAt < 3000) return;
+  if (verifyingCode === code) return;
+  lastCode = code; lastScanAt = now;
+  hideOverrideFaceBtn();
+
+  const { data: peserta, error } = await db
+    .from("peserta").select("*").eq("kode_qr", code).maybeSingle();
+
+  if (error) {
+    showScanOverlay("bad", "GAGAL", "Gagal membaca data peserta.");
+    return showResult("Gagal membaca data peserta: " + error.message, "bad");
+  }
+  if (!peserta) {
+    showScanOverlay("bad", "TIDAK TERDAFTAR", "QR tidak dikenali.");
+    return showResult("QR tidak terdaftar.", "bad");
+  }
+
+  const today = localDateStr();
+  const { data: existing } = await db
+    .from("kehadiran").select("*")
+    .eq("peserta_id", peserta.id).eq("tanggal", today).maybeSingle();
+
+  if (existing) {
+    showScanOverlay("warn", "SUDAH ABSEN", `${peserta.nama} — ${jamPendek(existing.jam)}`);
+    return showResult(`⚠️ SUDAH ABSEN<br><b>${esc(peserta.nama)}</b><br>${jamPendek(existing.jam)}`, "warn");
+  }
+
+  // ---- Verifikasi wajah, hanya kalau peserta punya foto terdaftar ----
+  if (peserta.foto) {
+    verifyingCode = code;
+    showResult(`🔎 Memverifikasi wajah <b>${esc(peserta.nama)}</b>...`, "warn");
+    let hasil;
+    try {
+      hasil = await verifyFaceForPeserta(peserta);
+    } catch (err) {
+      hasil = { ok: false, reason: "Gagal memverifikasi wajah: " + err.message };
+    }
+    verifyingCode = null;
+
+    if (!hasil.ok) {
+      showScanOverlay("bad", "WAJAH TIDAK COCOK", peserta.nama);
+      showResult(`❌ WAJAH TIDAK COCOK<br><b>${esc(peserta.nama)}</b><br>${esc(hasil.reason || "Silakan coba lagi.")}`, "bad");
+      showOverrideFaceBtn(peserta, today);
+      return;
+    }
+  }
+
+  await simpanKehadiran(peserta, today);
 }
 
 
