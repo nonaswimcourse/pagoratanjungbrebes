@@ -131,8 +131,8 @@ const spy = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       const id = entry.target.id;
-      dots.forEach(d => d.classList.toggle('active', d.getAttribute('href') === '#' + id));
-      navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      dots.forEach(d => (d.getAttribute('href') || '').endsWith('#' + id) ? d.classList.add('active') : d.classList.remove('active'));
+      navLinks.forEach(l => (l.getAttribute('href') || '').endsWith('#' + id) ? l.classList.add('active') : l.classList.remove('active'));
     }
   });
 }, { rootMargin: '-45% 0px -45% 0px' });
