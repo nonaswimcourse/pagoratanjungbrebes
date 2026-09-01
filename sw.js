@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pagora-tanjung-init';
+const CACHE_NAME = 'pagora-tanjung-v2';
 const APP_SHELL = [
   '/index.html',
   '/profil/',
@@ -61,7 +61,8 @@ self.addEventListener('fetch', (event) => {
   // CSS/JS: stale-while-revalidate so old cached logic (e.g. galeri rendering)
   // never gets stuck on a device — it's refreshed in the background on every visit
   // instead of only when the cache name changes.
-  const isAppCode = request.url.endsWith('.css') || request.url.endsWith('.js');
+  const requestPath = new URL(request.url).pathname;
+  const isAppCode = requestPath.endsWith('.css') || requestPath.endsWith('.js');
   if (isAppCode) {
     event.respondWith(
       caches.match(request).then((cached) => {
