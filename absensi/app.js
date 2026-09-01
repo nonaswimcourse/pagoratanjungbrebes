@@ -1544,11 +1544,15 @@ function applyAttendanceFilter() {
     : attendanceData.filter(x => x.tanggal === selected);
 
   if (!attendanceFiltered.length) {
-    box.innerHTML = `<tr><td colspan="5">Belum ada data kehadiran untuk pilihan ini.</td></tr>`;
+    box.innerHTML = `<tr><td colspan="6">Belum ada data kehadiran untuk pilihan ini.</td></tr>`;
   } else {
     box.innerHTML = attendanceFiltered.map((x, i) => `
-      <tr><td>${i + 1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
-      <td>${esc(formatTanggalPendek(x.tanggal))}</td><td>${jamPendek(x.jam)}</td></tr>`).join("");
+      <tr data-id="${esc(x.id)}">
+        <td>${i + 1}</td><td>${esc(x.peserta?.nama)}</td><td>${esc(x.peserta?.asal_sekolah || "-")}</td>
+        <td>${esc(formatTanggalPendek(x.tanggal))}</td>
+        <td class="jam-cell">${jamPendek(x.jam)}</td>
+        <td><button type="button" class="secondary edit-jam-btn" data-id="${esc(x.id)}" data-jam="${esc(x.jam || "")}">✏️ Edit Jam</button></td>
+      </tr>`).join("");
   }
   $("stats").innerHTML = `<div><b>${attendanceFiltered.length}</b><span>Total scan${selected !== "semua" ? " (tanggal ini)" : ""}</span></div>`;
 }
@@ -1563,7 +1567,7 @@ async function loadAttendance() {
   btn.textContent = "Memuat...";
 
   if (!requireDb()) {
-    box.innerHTML = `<tr><td colspan="5">${esc(configError)}</td></tr>`;
+    box.innerHTML = `<tr><td colspan="6">${esc(configError)}</td></tr>`;
     btn.disabled = false;
     btn.textContent = originalLabel;
     return;
@@ -1577,7 +1581,7 @@ async function loadAttendance() {
       .select("id,tanggal,jam,peserta(nama,asal_sekolah)")
       .order("tanggal", { ascending: false }).order("jam", { ascending: true });
     if (error) {
-      box.innerHTML = `<tr><td colspan="5">Gagal memuat: ${esc(error.message)}</td></tr>`;
+      box.innerHTML = `<tr><td colspan="6">Gagal memuat: ${esc(error.message)}</td></tr>`;
       return;
     }
     attendanceData = data || [];
@@ -1585,7 +1589,7 @@ async function loadAttendance() {
     applyAttendanceFilter();
     subscribeRealtimeAttendance();
   } catch (err) {
-    box.innerHTML = `<tr><td colspan="5">Gagal memuat data (cek koneksi internet): ${esc(err.message)}</td></tr>`;
+    box.innerHTML = `<tr><td colspan="6">Gagal memuat data (cek koneksi internet): ${esc(err.message)}</td></tr>`;
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -1612,6 +1616,55 @@ async function deleteAttendanceRows(ids, { silent = false } = {}) {
     if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
   }
 }
+
+// Edit jam absen per orang (mis. peserta yang datang siang tapi jam scan-nya
+// perlu dikoreksi sesuai kebijakan/hak panitia). Hanya mengubah kolom "jam" di
+// baris kehadiran yang dipilih — nama, tanggal, dan data peserta tidak berubah.
+async function updateAttendanceJam(id, jamBaru) {
+  if (!requireDb()) return alert(configError);
+  const { error } = await db.from("kehadiran").update({ jam: jamBaru }).eq("id", id);
+  if (error) {
+    alert("Gagal menyimpan perubahan jam: " + error.message);
+    return false;
+  }
+  return true;
+}
+
+$("attendanceList").addEventListener("click", async (e) => {
+  const btn = e.target.closest(".edit-jam-btn");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  const jamLama = btn.dataset.jam || "";
+  const row = btn.closest("tr");
+
+  const jamInput = prompt("Ubah jam absen (format HH:MM, contoh 07:15):", jamLama.slice(0, 5));
+  if (jamInput === null) return; // dibatalkan
+
+  const jamTrim = jamInput.trim();
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(jamTrim)) {
+    alert("Format jam tidak valid. Gunakan format HH:MM, contoh 07:15 atau 13:05.");
+    return;
+  }
+
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = "Menyimpan...";
+
+  const ok = await updateAttendanceJam(id, jamTrim);
+
+  if (ok) {
+    // Update tampilan & data lokal langsung tanpa perlu reload dari server.
+    const item = attendanceData.find(x => String(x.id) === String(id));
+    if (item) item.jam = jamTrim;
+    const jamCell = row.querySelector(".jam-cell");
+    if (jamCell) jamCell.textContent = jamPendek(jamTrim);
+    btn.dataset.jam = jamTrim;
+  }
+
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+});
 
 $("deleteRekapBtn").addEventListener("click", async () => {
   const rows = attendanceFiltered.length ? attendanceFiltered : attendanceData;
