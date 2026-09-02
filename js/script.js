@@ -37,11 +37,14 @@ mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => m
 // ===================== MODAL: RUANG GURU =====================
 const WA_LINK = 'https://wa.me/6283838450617';
 
+const DRIVE_LINK = 'https://drive.google.com/drive/folders/1D47NDKpZNOFe-cxL3Fzv2uaBYsJVx2iV';
+const WA_GROUP_LINK = 'https://chat.whatsapp.com/ErHJFvLaQq03ComwST4UCc?s=cl&p=i&mlu=4&ilr=4';
+
 const ruangGuruData = {
   materi: {
     eyebrow: 'Ruang Guru',
     title: 'Materi Ajar PJOK',
-    desc: 'Modul dan RPP siap pakai untuk mendukung pembelajaran PJOK di kelas. Hubungi admin KKG untuk mendapatkan berkas lengkap.',
+    desc: 'Modul dan RPP siap pakai untuk mendukung pembelajaran PJOK di kelas. Unduh berkas lengkap melalui Google Drive.',
     items: [
       { name: 'Modul Atletik (Lari, Lompat, Lempar)', sub: 'RPP + bahan ajar', tag: 'PDF' },
       { name: 'Modul Permainan Bola Besar', sub: 'Sepak bola, voli, basket', tag: 'PDF' },
@@ -49,16 +52,16 @@ const ruangGuruData = {
       { name: 'Modul Senam & Kebugaran Jasmani', sub: 'Untuk kelas 1–6', tag: 'PDF' },
       { name: 'Modul Aktivitas Air (Renang)', sub: 'Materi pengenalan renang', tag: 'PDF' }
     ],
-    cta: 'Minta Materi via WhatsApp'
+    cta: 'Buka Materi via Google Drive',
+    link: DRIVE_LINK
   },
   agenda: {
     eyebrow: 'Ruang Guru',
     title: 'Agenda Pelatihan',
     desc: 'Jadwal kegiatan rutin dan pelatihan anggota KKG PJOK SD Kecamatan Tanjung. Konfirmasi kehadiran melalui WhatsApp admin.',
     items: [
-      { name: 'Pelatihan Wasit Sepak Bola', sub: 'Sabtu, minggu ke-1 tiap bulan', tag: 'Rutin' },
+      { name: 'Pelatihan Olahraga', sub: 'Setiap Rabu, jam 10.00', tag: 'Rutin' },
       { name: 'Workshop Kurikulum Merdeka PJOK', sub: 'Triwulan berjalan', tag: 'Workshop' },
-      { name: 'Sertifikasi Wasit Bulutangkis', sub: 'Jadwal menyusul', tag: 'Sertifikasi' },
       { name: 'Rapat Rutin Anggota KKG', sub: 'Minggu ke-3 tiap bulan', tag: 'Rutin' }
     ],
     cta: 'Tanya Jadwal via WhatsApp'
@@ -66,24 +69,25 @@ const ruangGuruData = {
   forum: {
     eyebrow: 'Ruang Guru',
     title: 'Forum Diskusi',
-    desc: 'Forum diskusi anggota KKG PJOK saat ini berjalan melalui grup WhatsApp resmi, tempat berbagi metode mengajar dan tanya jawab antar guru.',
+    desc: 'Forum diskusi anggota KKG PJOK saat ini berjalan melalui grup WhatsApp resmi, tempat berbagi metode mengajar antar guru.',
     items: [
-      { name: 'Grup WhatsApp Anggota KKG PJOK', sub: 'Diskusi & berbagi pengalaman mengajar', tag: 'Aktif' },
-      { name: 'Tanya Jawab Kurikulum & Penilaian', sub: 'Bimbingan langsung dari pengurus', tag: 'Aktif' }
+      { name: 'Grup WhatsApp Anggota KKG PJOK', sub: 'Diskusi & berbagi pengalaman mengajar', tag: 'Aktif' }
     ],
-    cta: 'Gabung Forum via WhatsApp'
+    cta: 'Gabung Forum via WhatsApp',
+    link: WA_GROUP_LINK
   },
   unduhan: {
     eyebrow: 'Ruang Guru',
     title: 'Unduhan Perangkat',
-    desc: 'Format administrasi dan perangkat ajar siap pakai untuk kebutuhan mengajar sehari-hari. Berkas dikirim langsung oleh admin melalui WhatsApp.',
+    desc: 'Format administrasi dan perangkat ajar siap pakai untuk kebutuhan mengajar sehari-hari. Unduh berkas melalui Google Drive.',
     items: [
-      { name: 'Format Penilaian Harian & Sumatif', sub: 'Sesuai Kurikulum Merdeka', tag: 'DOCX' },
-      { name: 'Format Administrasi Kelas PJOK', sub: 'Presensi, jurnal, catatan', tag: 'DOCX' },
-      { name: 'Silabus & Prota-Promes PJOK', sub: 'Semua jenjang kelas', tag: 'DOCX' },
-      { name: 'Template RPP Terbaru', sub: 'Format ringkas terbaru', tag: 'DOCX' }
+      { name: 'Format Penilaian Harian & Sumatif', sub: 'Sesuai Kurikulum Merdeka' },
+      { name: 'Format Administrasi Kelas PJOK', sub: 'Presensi, jurnal, catatan' },
+      { name: 'Silabus & Prota-Promes PJOK', sub: 'Semua jenjang kelas' },
+      { name: 'Template RPP Terbaru', sub: 'Format ringkas terbaru' }
     ],
-    cta: 'Minta Berkas via WhatsApp'
+    cta: 'Unduh Berkas Google Drive',
+    link: DRIVE_LINK
   }
 };
 
@@ -111,14 +115,14 @@ document.querySelectorAll('[data-modal]').forEach(btn => {
     const itemsHtml = data.items.map(it => `
       <li>
         <div><span class="m-name">${it.name}</span><span class="m-sub">${it.sub}</span></div>
-        <span class="m-tag">${it.tag}</span>
+        ${it.tag ? `<span class="m-tag">${it.tag}</span>` : ''}
       </li>`).join('');
     openModal(`
       <span class="m-eyebrow">${data.eyebrow}</span>
       <h3>${data.title}</h3>
       <p>${data.desc}</p>
       <ul class="modal-list">${itemsHtml}</ul>
-      <a class="modal-cta" href="${WA_LINK}" target="_blank" rel="noopener">${data.cta}</a>
+      <a class="modal-cta" href="${data.link || WA_LINK}" target="_blank" rel="noopener">${data.cta}</a>
     `);
   });
 });
