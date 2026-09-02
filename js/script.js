@@ -81,10 +81,10 @@ const ruangGuruData = {
     title: 'Unduhan Perangkat',
     desc: 'Format administrasi dan perangkat ajar siap pakai untuk kebutuhan mengajar sehari-hari. Unduh berkas melalui Google Drive.',
     items: [
-      { name: 'Format Penilaian Harian & Sumatif', sub: 'Sesuai Kurikulum Merdeka' },
-      { name: 'Format Administrasi Kelas PJOK', sub: 'Presensi, jurnal, catatan' },
-      { name: 'Silabus & Prota-Promes PJOK', sub: 'Semua jenjang kelas' },
-      { name: 'Template RPP Terbaru', sub: 'Format ringkas terbaru' }
+      { name: 'Format Penilaian Harian & Sumatif', sub: 'Sesuai Kurikulum Merdeka' , tag: 'PDF' },
+      { name: 'Format Administrasi Kelas PJOK', sub: 'Presensi, jurnal, catatan' , tag: 'PDF' },
+      { name: 'Silabus & Prota-Promes PJOK', sub: 'Semua jenjang kelas' , tag: 'PDF' },
+      { name: 'Template RPP Terbaru', sub: 'Format ringkas terbaru', tag: 'PDF'  }
     ],
     cta: 'Unduh Berkas Google Drive',
     link: DRIVE_LINK
