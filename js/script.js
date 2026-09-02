@@ -86,7 +86,7 @@ const ruangGuruData = {
       { name: 'Silabus & Prota-Promes PJOK', sub: 'Semua jenjang kelas' , tag: 'PDF' },
       { name: 'Template RPP Terbaru', sub: 'Format ringkas terbaru', tag: 'PDF'  }
     ],
-    cta: 'Unduh Berkas Google Drive',
+    cta: 'Unduh Perangkat Via Google Drive',
     link: DRIVE_LINK
   }
 };
