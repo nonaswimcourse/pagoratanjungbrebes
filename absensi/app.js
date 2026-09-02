@@ -346,6 +346,31 @@ function newKodeQr() {
   return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
 }
 
+// URL halaman profil publik (dibuka saat QR di-scan pakai kamera HP biasa,
+// BUKAN lewat scanner di dalam aplikasi ini). Sesuaikan kalau lokasi filenya dipindah.
+const PROFIL_BASE_URL = new URL("profil.html", window.location.href).href;
+
+// Isi yang benar-benar "digambar" jadi QR: bukan cuma kode UUID mentah lagi,
+// tapi link ke halaman profil publik supaya kamera HP biasa (bukan cuma scanner
+// di dalam app ini) bisa langsung buka & menampilkan foto+nama+sekolah peserta.
+function qrPayload(kodeQr) {
+  return `${PROFIL_BASE_URL}?kode=${encodeURIComponent(kodeQr)}`;
+}
+
+// Ambil kode_qr murni dari hasil scan, baik dari QR format lama (cuma teks UUID)
+// maupun format baru (link profil.html?kode=UUID) -- supaya kartu lama yang sudah
+// kadung dicetak juga tetap bisa dipakai untuk absen.
+function extractKodeQr(scannedText) {
+  try {
+    const url = new URL(scannedText);
+    const kode = url.searchParams.get("kode");
+    if (kode) return kode;
+  } catch {
+    // bukan URL yang valid -> anggap ini kode QR format lama (teks UUID langsung)
+  }
+  return scannedText;
+}
+
 // ============ SINKRON PENGATURAN LEWAT SUPABASE (realtime di semua perangkat) ============
 // Dulu pengaturan Kartu ID & Rekap cuma disimpan di localStorage (khusus browser itu saja),
 // makanya kalau dibuka di HP/laptop/browser lain hasilnya beda. Sekarang disimpan juga ke
@@ -969,7 +994,7 @@ async function renderIdCard(p, settings) {
     tmp.style.left = "-9999px";
     document.body.appendChild(tmp);
     try {
-      const qrCanvas = drawQr(tmp, p.kode_qr, Math.round(Math.max(bw, bh)));
+      const qrCanvas = drawQr(tmp, qrPayload(p.kode_qr), Math.round(Math.max(bw, bh)));
       ctx.drawImage(qrCanvas, box.x0 * W, box.y0 * H, bw, bh);
     } finally {
       document.body.removeChild(tmp);
@@ -1084,7 +1109,7 @@ async function loadParticipants() {
   data.forEach(p => {
     const container = document.getElementById(`qr-${p.id}`);
     try {
-      drawQr(container, p.kode_qr);
+      drawQr(container, qrPayload(p.kode_qr));
     } catch (err) {
       const card = container.closest(".participant");
       const info = card.querySelector(".info");
@@ -1434,8 +1459,9 @@ async function handleScan(code) {
   if (code === lastCode && now - lastScanAt < 3000) return;
   lastCode = code; lastScanAt = now;
 
+  const kode = extractKodeQr(code);
   const { data: peserta, error } = await db
-    .from("peserta").select("*").eq("kode_qr", code).maybeSingle();
+    .from("peserta").select("*").eq("kode_qr", kode).maybeSingle();
 
   if (error) {
     showScanOverlay("bad", "GAGAL", "Gagal membaca data peserta.");
