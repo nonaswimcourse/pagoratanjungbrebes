@@ -121,6 +121,14 @@ nav a:hover, nav a.active{opacity:1;color:var(--lime);}
   border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
   transform:rotate(45deg);margin-left:6px;margin-bottom:2px;opacity:.7;
 }
+/* Jembatan tak terlihat yang menutup celah antara link "Ruang Guru" dan
+   submenu-nya, supaya hover tidak terputus saat kursor digeser turun
+   (tanpa jembatan ini, submenu langsung hilang begitu kursor lewat celah). */
+.nav-dropdown::before{
+  content:"";position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  width:max(100%,200px);height:20px;
+}
 .nav-dropdown .dropdown-menu{
   position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(6px);
   background:var(--bg-panel-2);border:1px solid var(--line);border-radius:12px;
