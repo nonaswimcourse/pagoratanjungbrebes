@@ -131,12 +131,24 @@ document.querySelectorAll('[data-modal]').forEach(btn => {
 const sections = document.querySelectorAll('section[id]');
 const dots = document.querySelectorAll('.dot-nav a');
 const navLinks = document.querySelectorAll('nav > ul > li > a');
+
+// judul tab per section, disamakan dengan <title> di halaman berdirinya sendiri
+// (profil/, ruang-guru/, galeri/, kontak/)
+const sectionTitles = {
+  beranda: 'PAGORA TANJUNG',
+  profil: 'Profil — PAGORA TANJUNG',
+  'ruang-guru': 'Ruang Guru — PAGORA TANJUNG',
+  galeri: 'Galeri Kegiatan — PAGORA TANJUNG',
+  kontak: 'Kontak — PAGORA TANJUNG'
+};
+
 const spy = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       const id = entry.target.id;
       dots.forEach(d => (d.getAttribute('href') || '').endsWith('#' + id) ? d.classList.add('active') : d.classList.remove('active'));
       navLinks.forEach(l => (l.getAttribute('href') || '').endsWith('#' + id) ? l.classList.add('active') : l.classList.remove('active'));
+      if (sectionTitles[id]) document.title = sectionTitles[id];
     }
   });
 }, { rootMargin: '-45% 0px -45% 0px' });
