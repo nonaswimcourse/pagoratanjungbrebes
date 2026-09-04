@@ -113,6 +113,39 @@ header{
 nav ul{display:flex;align-items:center;gap:38px;}
 nav a{font-weight:600;font-size:14.5px;color:var(--text);opacity:.85;transition:opacity .2s, color .2s;position:relative;}
 nav a:hover, nav a.active{opacity:1;color:var(--lime);}
+
+/* Dropdown submenu (mis. Ruang Guru > Absensi) */
+.nav-dropdown{position:relative;}
+.nav-dropdown > a::after{
+  content:"";display:inline-block;width:6px;height:6px;
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  transform:rotate(45deg);margin-left:6px;margin-bottom:2px;opacity:.7;
+}
+.nav-dropdown .dropdown-menu{
+  position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(6px);
+  background:var(--bg-panel-2);border:1px solid var(--line);border-radius:12px;
+  padding:6px;min-width:170px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+  box-shadow:0 16px 32px rgba(0,0,0,.35);
+  z-index:150;
+}
+.nav-dropdown:hover .dropdown-menu,
+.nav-dropdown:focus-within .dropdown-menu{
+  opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0);
+}
+.dropdown-menu a{
+  display:block;padding:9px 12px;font-size:13.5px;font-weight:600;
+  border-radius:7px;opacity:.85;white-space:nowrap;
+}
+.dropdown-menu a:hover{background:rgba(183,255,59,0.1);opacity:1;color:var(--lime);}
+
+/* Sub-link Absensi di mobile nav */
+#mobileNav a.mobile-sub{
+  padding:9px 0 9px 18px;font-weight:500;font-size:14px;
+  opacity:.8;color:var(--muted);border-bottom:1px solid var(--line);
+}
+#mobileNav a.mobile-sub::before{content:"↳ ";}
 .nav-cta{display:flex;align-items:center;gap:18px;}
 
 /* TOMBOL WA DI HEADER (Samping menu Kontak) */
