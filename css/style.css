@@ -131,11 +131,11 @@ nav a:hover, nav a.active{opacity:1;color:var(--lime);}
 }
 .nav-dropdown .dropdown-menu{
   position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(6px);
-  background:var(--bg-panel-2);border:1px solid var(--line);border-radius:12px;
+  background:transparent;border:none;border-radius:0;
   padding:6px;min-width:170px;
   opacity:0;visibility:hidden;pointer-events:none;
   transition:opacity .18s ease, transform .18s ease;
-  box-shadow:0 16px 32px rgba(0,0,0,.35);
+  box-shadow:none;
   z-index:150;
 }
 .nav-dropdown:hover .dropdown-menu,
