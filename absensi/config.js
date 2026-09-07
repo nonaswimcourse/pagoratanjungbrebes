@@ -7,7 +7,7 @@ export const SUPABASE_ANON_KEY = "sb_publishable_phZErDKE6oDEDN5whvlk3Q_8LpXylcG
 // GOOGLE_CLIENT_ID: OAuth 2.0 Client ID (tipe "Web application") dari Google Cloud Console.
 // Wajib diisi supaya tombol kirim ke Drive berfungsi. Lihat PANDUAN_GOOGLE_DRIVE.md
 // untuk langkah lengkap membuatnya (gratis, sekitar 5 menit).
-export const GOOGLE_CLIENT_ID = "587842427123-1pspjkj2ppm6h49incjv2fuiiiv6207k.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = "903243842649-vavhqhb6q3lm71god0v1lisldtlgj35s.apps.googleusercontent.com";
 
 // GOOGLE_DRIVE_FOLDER_ID: ID folder Google Drive tujuan upload PDF rekap.
 // Diambil dari URL folder: https://drive.google.com/drive/folders/<ID_INI>
