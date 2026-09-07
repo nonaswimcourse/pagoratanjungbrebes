@@ -41,8 +41,13 @@ $("toggleRekapSettings").addEventListener("click", () => {
 // diisi tidak mematikan seluruh aplikasi.
 let db = null;
 let configError = "";
+let GOOGLE_CLIENT_ID = "";
+let GOOGLE_DRIVE_FOLDER_ID = "";
 try {
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./config.js");
+  const cfg = await import("./config.js");
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = cfg;
+  GOOGLE_CLIENT_ID = cfg.GOOGLE_CLIENT_ID || "";
+  GOOGLE_DRIVE_FOLDER_ID = cfg.GOOGLE_DRIVE_FOLDER_ID || "";
   if (!SUPABASE_URL || SUPABASE_URL.includes("PROJECT-ID") ||
       !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("ISI_ANON")) {
     configError = "config.js belum diisi dengan URL & anon key Supabase yang asli.";
@@ -1728,23 +1733,28 @@ function formatTanggalIndonesia(date) {
   return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 }
 
-$("downloadRekapPdf").addEventListener("click", () => {
-  const btn = $("downloadRekapPdf");
+// Membangun dokumen PDF Rekap Kehadiran dan MENGEMBALIKANNYA (tidak langsung
+// disimpan/diunduh), supaya bisa dipakai bersama oleh tombol "Unduh PDF" maupun
+// tombol "Kirim ke Google Drive" tanpa duplikasi logika.
+// Return: { doc, fileTag, fileName } jika berhasil, atau null kalau gagal
+// (pesan error sudah ditampilkan lewat alert oleh fungsi ini sendiri).
+function buildRekapPdfDoc() {
   const rows = attendanceFiltered.length ? attendanceFiltered : attendanceData;
   const selectedTanggal = $("rekapDateFilter").value || "semua";
 
-  if (!rows.length) return alert("Belum ada data kehadiran untuk diunduh.");
+  if (!rows.length) {
+    alert("Belum ada data kehadiran untuk diunduh.");
+    return null;
+  }
   if (typeof window.jspdf === "undefined" || typeof window.jspdf.jsPDF !== "function") {
-    return alert("Library PDF (jsPDF) gagal dimuat. Pastikan HP/komputer ini terhubung ke internet lalu muat ulang halaman.");
+    alert("Library PDF (jsPDF) gagal dimuat. Pastikan HP/komputer ini terhubung ke internet lalu muat ulang halaman.");
+    return null;
   }
   const __testDoc = new window.jspdf.jsPDF();
   if (typeof __testDoc.autoTable !== "function") {
-    return alert("Library tabel PDF (jsPDF-AutoTable) gagal dimuat sepenuhnya. Coba muat ulang halaman (tarik ke bawah untuk refresh), atau ganti jaringan internet lalu coba lagi.");
+    alert("Library tabel PDF (jsPDF-AutoTable) gagal dimuat sepenuhnya. Coba muat ulang halaman (tarik ke bawah untuk refresh), atau ganti jaringan internet lalu coba lagi.");
+    return null;
   }
-
-  const originalLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Menyiapkan PDF...";
 
   try {
     const { jsPDF } = window.jspdf;
@@ -1879,10 +1889,151 @@ $("downloadRekapPdf").addEventListener("click", () => {
       }
     }
 
-    doc.save(`Rekap_Kehadiran_${fileTag}.pdf`);
+    return { doc, fileTag, fileName: `Rekap_Kehadiran_${fileTag}.pdf` };
   } catch (err) {
     console.error("Gagal membuat PDF:", err);
     alert("Gagal membuat PDF: " + err.message);
+    return null;
+  }
+}
+
+$("downloadRekapPdf").addEventListener("click", () => {
+  const btn = $("downloadRekapPdf");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Menyiapkan PDF...";
+  try {
+    const built = buildRekapPdfDoc();
+    if (built) built.doc.save(built.fileName);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ============ KIRIM PDF REKAP KE GOOGLE DRIVE ============
+// Memakai Google Identity Services (OAuth) supaya pengguna login dengan akun
+// Google-nya sendiri, lalu file PDF diunggah langsung ke folder Drive yang
+// sudah ditentukan di config.js (GOOGLE_DRIVE_FOLDER_ID). Token akses TIDAK
+// disimpan/dipakai ulang otomatis — setiap klik akan minta izin/login lagi
+// kalau sesi sebelumnya sudah kedaluwarsa (wajar, token Google berumur pendek).
+let googleTokenClient = null;
+let googleAccessToken = null;
+
+function ensureGoogleTokenClient() {
+  if (googleTokenClient) return true;
+  if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
+    alert("Library Google Sign-In gagal dimuat. Pastikan perangkat ini terhubung ke internet lalu muat ulang halaman.");
+    return false;
+  }
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("ISI_DENGAN_CLIENT_ID")) {
+    alert(
+      "Fitur Kirim ke Google Drive belum diaktifkan.\n\n" +
+      "GOOGLE_CLIENT_ID di config.js belum diisi dengan Client ID Google asli. " +
+      "Lihat PANDUAN_GOOGLE_DRIVE.md untuk cara membuatnya (gratis)."
+    );
+    return false;
+  }
+  googleTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/drive.file",
+    callback: () => {} // di-override sesaat sebelum requestAccessToken() dipanggil
+  });
+  return true;
+}
+
+// Meminta access token Google (memicu popup login/izin akun kalau perlu).
+function requestGoogleAccessToken() {
+  return new Promise((resolve, reject) => {
+    if (!ensureGoogleTokenClient()) return reject(new Error("token-client-tidak-siap"));
+    googleTokenClient.callback = (resp) => {
+      if (resp && resp.access_token) {
+        googleAccessToken = resp.access_token;
+        resolve(resp.access_token);
+      } else {
+        reject(new Error("Login Google dibatalkan atau gagal."));
+      }
+    };
+    googleTokenClient.requestAccessToken({ prompt: googleAccessToken ? "" : "consent" });
+  });
+}
+
+// Mengunggah blob PDF ke folder Drive tujuan lewat multipart upload Drive v3 API.
+async function uploadPdfBlobToDrive(pdfBlob, fileName, accessToken) {
+  const metadata = {
+    name: fileName,
+    mimeType: "application/pdf",
+    ...(GOOGLE_DRIVE_FOLDER_ID ? { parents: [GOOGLE_DRIVE_FOLDER_ID] } : {})
+  };
+  const boundary = "-------rekapabsensi" + Date.now();
+  const delimiter = `\r\n--${boundary}\r\n`;
+  const closeDelim = `\r\n--${boundary}--`;
+
+  const pdfBase64 = await blobToBase64(pdfBlob);
+
+  const body =
+    delimiter +
+    "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+    JSON.stringify(metadata) +
+    delimiter +
+    "Content-Type: application/pdf\r\n" +
+    "Content-Transfer-Encoding: base64\r\n\r\n" +
+    pdfBase64 +
+    closeDelim;
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`
+      },
+      body
+    }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Upload gagal (HTTP ${res.status}). ${errText}`);
+  }
+  return res.json();
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+$("uploadRekapPdfDrive").addEventListener("click", async () => {
+  const btn = $("uploadRekapPdfDrive");
+  const originalLabel = btn.textContent;
+
+  const built = buildRekapPdfDoc();
+  if (!built) return;
+
+  btn.disabled = true;
+  btn.textContent = "Menghubungkan ke Google...";
+  try {
+    const accessToken = await requestGoogleAccessToken();
+    btn.textContent = "Mengunggah ke Drive...";
+    const pdfBlob = built.doc.output("blob");
+    const result = await uploadPdfBlobToDrive(pdfBlob, built.fileName, accessToken);
+    const link = result && result.webViewLink ? `\n\nBuka file: ${result.webViewLink}` : "";
+    alert(`Berhasil dikirim ke Google Drive sebagai "${built.fileName}".${link}`);
+  } catch (err) {
+    console.error("Gagal kirim ke Google Drive:", err);
+    // Kalau token basi/ditolak, coba sekali lagi dengan minta login ulang (consent).
+    if (String(err.message || "").includes("HTTP 401") || String(err.message || "").includes("HTTP 403")) {
+      googleAccessToken = null;
+      alert("Sesi Google kedaluwarsa atau izin ditolak. Silakan klik tombol ini sekali lagi untuk login ulang.");
+    } else if (err.message !== "token-client-tidak-siap") {
+      alert("Gagal mengirim PDF ke Google Drive: " + err.message);
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
