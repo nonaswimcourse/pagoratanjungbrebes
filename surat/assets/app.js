@@ -5028,11 +5028,11 @@ function blobToBase64(blob) {
 }
 
 // Mengunggah satu blob (PDF, dll) ke folder Drive tujuan lewat multipart upload Drive v3 API.
-async function uploadBlobToDrive(blob, fileName, mimeType, accessToken) {
+async function uploadBlobToDrive(blob, fileName, mimeType, accessToken, folderId) {
   const metadata = {
     name: fileName,
     mimeType,
-    ...(typeof GOOGLE_DRIVE_FOLDER_ID !== 'undefined' && GOOGLE_DRIVE_FOLDER_ID ? { parents: [GOOGLE_DRIVE_FOLDER_ID] } : {})
+    ...(folderId ? { parents: [folderId] } : {})
   };
   const boundary = '-------sipassurat' + Date.now();
   const delimiter = `\r\n--${boundary}\r\n`;
@@ -5101,10 +5101,12 @@ function openDriveFolderPicker(accessToken) {
       return reject(new Error('GOOGLE_API_KEY di config.js belum diisi. Lihat komentar di config.js untuk cara membuatnya.'));
     }
     const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
-      .setParent(GOOGLE_DRIVE_FOLDER_ID)
       .setIncludeFolders(true)
       .setSelectFolderEnabled(true)
       .setMimeTypes('application/vnd.google-apps.folder');
+    if (typeof GOOGLE_PICKER_START_FOLDER_ID !== 'undefined' && GOOGLE_PICKER_START_FOLDER_ID) {
+      view.setParent(GOOGLE_PICKER_START_FOLDER_ID);
+    }
 
     const picker = new google.picker.PickerBuilder()
       .setOAuthToken(accessToken)
@@ -5113,12 +5115,12 @@ function openDriveFolderPicker(accessToken) {
       .setTitle('Pilih folder ini untuk mengaktifkan akses upload')
       .setCallback((data) => {
         if (data.action === google.picker.Action.PICKED) {
-          console.log('[DEBUG Picker] Folder yang dipilih:', data.docs && data.docs[0]);
-          console.log('[DEBUG Picker] ID folder yang dipilih:', data.docs && data.docs[0] && data.docs[0].id);
-          console.log('[DEBUG Picker] GOOGLE_DRIVE_FOLDER_ID (target):', GOOGLE_DRIVE_FOLDER_ID);
-          console.log('[DEBUG Picker] Cocok?', data.docs && data.docs[0] && data.docs[0].id === GOOGLE_DRIVE_FOLDER_ID);
-          try { localStorage.setItem('driveFolderAccessGranted_v1', '1'); } catch (e) {}
-          resolve(true);
+          const pickedId = data.docs && data.docs[0] && data.docs[0].id;
+          try {
+            localStorage.setItem('driveFolderAccessGranted_v1', '1');
+            if (pickedId) localStorage.setItem('driveUploadFolderId_v1', pickedId);
+          } catch (e) {}
+          resolve(pickedId || GOOGLE_DRIVE_FOLDER_ID);
         } else if (data.action === google.picker.Action.CANCEL) {
           reject(new Error('Pemilihan folder dibatalkan. Klik tombol kirim sekali lagi untuk mengulang.'));
         }
@@ -5132,11 +5134,15 @@ function openDriveFolderPicker(accessToken) {
 // login di perangkat ini, sebelum benar-benar mengunggah PDF.
 async function ensureDriveFolderAccess(accessToken) {
   let already = false;
-  try { already = localStorage.getItem('driveFolderAccessGranted_v1') === '1'; } catch (e) {}
-  if (already) return;
+  let storedFolderId = null;
+  try {
+    already = localStorage.getItem('driveFolderAccessGranted_v1') === '1';
+    storedFolderId = localStorage.getItem('driveUploadFolderId_v1');
+  } catch (e) {}
+  if (already && storedFolderId) return storedFolderId;
   await loadGooglePickerApi();
-  showToast('Pilih folder tujuan di jendela Google yang muncul untuk mengaktifkan akses (cukup sekali).', 'info');
-  await openDriveFolderPicker(accessToken);
+  showToast('Pilih folder bulan tujuan di jendela Google yang muncul.', 'info');
+  return await openDriveFolderPicker(accessToken);
 }
 
 // Wrapper: pastikan akses folder ada dulu, baru upload. Kalau ternyata masih
@@ -5144,15 +5150,18 @@ async function ensureDriveFolderAccess(accessToken) {
 // atau token beda akun), paksa ulang alur Picker sekali lalu coba upload lagi.
 async function uploadPdfToSharedFolder(blob, fileName, accessToken) {
   try {
-    await ensureDriveFolderAccess(accessToken);
-    return await uploadBlobToDrive(blob, fileName, 'application/pdf', accessToken);
+    const folderId = await ensureDriveFolderAccess(accessToken);
+    return await uploadBlobToDrive(blob, fileName, 'application/pdf', accessToken, folderId);
   } catch (err) {
     const msg = String((err && err.message) || '');
     if (msg.includes('insufficientParentPermissions')) {
-      try { localStorage.removeItem('driveFolderAccessGranted_v1'); } catch (e) {}
+      try {
+        localStorage.removeItem('driveFolderAccessGranted_v1');
+        localStorage.removeItem('driveUploadFolderId_v1');
+      } catch (e) {}
       await loadGooglePickerApi();
-      await openDriveFolderPicker(accessToken);
-      return await uploadBlobToDrive(blob, fileName, 'application/pdf', accessToken);
+      const folderId = await openDriveFolderPicker(accessToken);
+      return await uploadBlobToDrive(blob, fileName, 'application/pdf', accessToken, folderId);
     }
     throw err;
   }
