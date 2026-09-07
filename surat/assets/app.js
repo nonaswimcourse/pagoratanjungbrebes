@@ -2530,6 +2530,7 @@ async function renderDashboard() {
         <div><h2>Dokumen Terbaru</h2><p>Data terakhir yang tersimpan di sistem.</p></div>
         <div class="topbar-actions">
           <button class="btn secondary" onclick="exportCsv()">Export CSV</button>
+          <button class="btn secondary" id="sendAllPdfDriveBtn" onclick="sendAllPdfToDrive()">☁️ Kirim Semua PDF ke Drive</button>
           <button class="btn danger" onclick="resetAllData()">Reset Semua Data</button>
         </div>
       </div>
@@ -2625,6 +2626,7 @@ function actionButtons(row) {
   if (getPerm('pdf')) {
     buttons.push(`<button type="button" onclick="downloadById(event, '${jsAttr(row.id)}')">PDF</button>`);
     buttons.push(`<button type="button" onclick="downloadWordById(event, '${jsAttr(row.id)}')">Word</button>`);
+    buttons.push(`<button type="button" onclick="sendPdfToDrive(event, '${jsAttr(row.id)}')">☁️ Drive</button>`);
   }
   if (getPerm('edit')) buttons.push(`<button type="button" onclick="editById('${jsAttr(row.id)}')">Edit</button>`);
   if (getPerm('approve') && row.status === 'diajukan') buttons.push(`<button type="button" class="green" onclick="approveById('${jsAttr(row.id)}')">Setujui</button>`);
@@ -4970,6 +4972,193 @@ function downloadText(content, filename, type) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// ============ KIRIM PDF SURAT KE GOOGLE DRIVE ============
+// Memakai Google Identity Services (OAuth) supaya pengguna login dengan akun
+// Google-nya sendiri, lalu file PDF diunggah langsung ke folder Drive yang
+// sudah ditentukan di config.js (GOOGLE_DRIVE_FOLDER_ID). Token akses TIDAK
+// disimpan/dipakai ulang otomatis — setiap klik akan minta izin/login lagi
+// kalau sesi sebelumnya sudah kedaluwarsa (wajar, token Google berumur pendek).
+// Pola ini sama persis dengan tombol "Kirim ke Google Drive" di /absensi.
+let googleTokenClient = null;
+let googleAccessToken = null;
+
+function ensureGoogleTokenClient() {
+  if (googleTokenClient) return true;
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    showToast('Library Google Sign-In gagal dimuat. Pastikan perangkat ini terhubung ke internet lalu muat ulang halaman.', 'error');
+    return false;
+  }
+  if (typeof GOOGLE_CLIENT_ID === 'undefined' || !GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('ISI_DENGAN_CLIENT_ID')) {
+    showToast('Fitur Kirim ke Google Drive belum diaktifkan. GOOGLE_CLIENT_ID di config.js belum diisi.', 'error');
+    return false;
+  }
+  googleTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: () => {} // di-override sesaat sebelum requestAccessToken() dipanggil
+  });
+  return true;
+}
+
+// Meminta access token Google (memicu popup login/izin akun kalau perlu).
+function requestGoogleAccessToken() {
+  return new Promise((resolve, reject) => {
+    if (!ensureGoogleTokenClient()) return reject(new Error('token-client-tidak-siap'));
+    googleTokenClient.callback = (resp) => {
+      if (resp && resp.access_token) {
+        googleAccessToken = resp.access_token;
+        resolve(resp.access_token);
+      } else {
+        reject(new Error('Login Google dibatalkan atau gagal.'));
+      }
+    };
+    googleTokenClient.requestAccessToken({ prompt: googleAccessToken ? '' : 'consent' });
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Mengunggah satu blob (PDF, dll) ke folder Drive tujuan lewat multipart upload Drive v3 API.
+async function uploadBlobToDrive(blob, fileName, mimeType, accessToken) {
+  const metadata = {
+    name: fileName,
+    mimeType,
+    ...(typeof GOOGLE_DRIVE_FOLDER_ID !== 'undefined' && GOOGLE_DRIVE_FOLDER_ID ? { parents: [GOOGLE_DRIVE_FOLDER_ID] } : {})
+  };
+  const boundary = '-------sipassurat' + Date.now();
+  const delimiter = `\r\n--${boundary}\r\n`;
+  const closeDelim = `\r\n--${boundary}--`;
+
+  const base64Data = await blobToBase64(blob);
+
+  const body =
+    delimiter +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) +
+    delimiter +
+    `Content-Type: ${mimeType}\r\n` +
+    'Content-Transfer-Encoding: base64\r\n\r\n' +
+    base64Data +
+    closeDelim;
+
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`
+      },
+      body
+    }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Upload gagal (HTTP ${res.status}). ${errText}`);
+  }
+  return res.json();
+}
+
+// Kirim PDF satu surat tertentu (tombol "☁️ Drive" di baris tabel) ke Google Drive.
+// PDF dibangun ulang dari data surat (sama seperti tombol PDF), lalu langsung
+// diunggah ke Drive tanpa diunduh ke perangkat.
+async function sendPdfToDrive(eventOrId, maybeId) {
+  const id = maybeId === undefined ? eventOrId : maybeId;
+  const btn = maybeId === undefined ? null : (eventOrId?.currentTarget || eventOrId?.target || null);
+  const originalText = setButtonBusy(btn, 'Menghubungkan...');
+
+  try {
+    await loadProfile();
+    const row = findDocumentById(id) || (await fetchDocuments()).find((item) => String(item.id) === String(id));
+    if (!row) {
+      showToast('Data tidak ditemukan.', 'error');
+      return;
+    }
+
+    const accessToken = await requestGoogleAccessToken();
+    if (btn) btn.textContent = 'Membuat PDF...';
+    const built = await createPdfFromDocument(row, { download: false, upload: false });
+    if (!built) {
+      showToast('PDF gagal dibuat. Periksa koneksi library html2canvas dan jsPDF.', 'error');
+      return;
+    }
+
+    if (btn) btn.textContent = 'Mengunggah...';
+    const result = await uploadBlobToDrive(built.pdfBlob, built.fileName, 'application/pdf', accessToken);
+    const link = result && result.webViewLink ? ` Buka file: ${result.webViewLink}` : '';
+    showToast(`Berhasil dikirim ke Google Drive sebagai "${built.fileName}".${link}`, 'success');
+  } catch (err) {
+    console.error('Gagal kirim PDF ke Google Drive:', err);
+    if (String(err.message || '').includes('HTTP 401') || String(err.message || '').includes('HTTP 403')) {
+      googleAccessToken = null;
+      showToast('Sesi Google kedaluwarsa atau izin ditolak. Klik tombol ini sekali lagi untuk login ulang.', 'error');
+    } else if (err.message !== 'token-client-tidak-siap') {
+      showToast('Gagal mengirim PDF ke Google Drive: ' + err.message, 'error');
+    }
+  } finally {
+    restoreButton(btn, originalText);
+  }
+}
+
+// Kirim PDF SEMUA surat (tombol di Dashboard, sebelah Export CSV) ke Google Drive.
+// PDF dibuat satu per satu (html2canvas perlu render bergantian), lalu langsung
+// diunggah ke Drive tanpa diunduh ke perangkat. Bisa memakan waktu cukup lama
+// kalau datanya banyak — tombol menampilkan progres "Mengirim x/y...".
+async function sendAllPdfToDrive() {
+  if (!getPerm('pdf')) return showToast('Role ini tidak dapat mengirim PDF.', 'error');
+
+  const btn = el('sendAllPdfDriveBtn');
+  const originalLabel = btn ? btn.textContent : '';
+
+  await loadProfile();
+  const rows = await fetchDocuments();
+  if (!rows.length) return showToast('Belum ada data surat untuk dikirim.', 'error');
+
+  if (!confirm(`Kirim PDF dari ${rows.length} surat ke Google Drive? Proses ini bisa memakan waktu beberapa menit.`)) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Menghubungkan ke Google...'; }
+  let accessToken;
+  try {
+    accessToken = await requestGoogleAccessToken();
+  } catch (err) {
+    if (err.message !== 'token-client-tidak-siap') showToast('Login Google gagal: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+    return;
+  }
+
+  let success = 0;
+  let failed = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (btn) btn.textContent = `Mengirim ${i + 1}/${rows.length}...`;
+    try {
+      const built = await createPdfFromDocument(row, { download: false, upload: false });
+      if (!built) throw new Error('PDF gagal dibuat');
+      await uploadBlobToDrive(built.pdfBlob, built.fileName, 'application/pdf', accessToken);
+      success++;
+    } catch (err) {
+      console.error(`Gagal mengirim PDF surat "${row.nomor_surat || row.id}":`, err);
+      failed++;
+      if (String(err.message || '').includes('HTTP 401') || String(err.message || '').includes('HTTP 403')) {
+        googleAccessToken = null;
+        showToast('Sesi Google kedaluwarsa di tengah proses. Klik tombol ini lagi untuk melanjutkan.', 'error');
+        break;
+      }
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+  showToast(`Selesai. ${success} PDF berhasil dikirim ke Drive${failed ? `, ${failed} gagal.` : '.'}`, failed ? 'warning' : 'success');
 }
 
 
