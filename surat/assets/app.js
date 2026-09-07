@@ -5113,6 +5113,10 @@ function openDriveFolderPicker(accessToken) {
       .setTitle('Pilih folder ini untuk mengaktifkan akses upload')
       .setCallback((data) => {
         if (data.action === google.picker.Action.PICKED) {
+          console.log('[DEBUG Picker] Folder yang dipilih:', data.docs && data.docs[0]);
+          console.log('[DEBUG Picker] ID folder yang dipilih:', data.docs && data.docs[0] && data.docs[0].id);
+          console.log('[DEBUG Picker] GOOGLE_DRIVE_FOLDER_ID (target):', GOOGLE_DRIVE_FOLDER_ID);
+          console.log('[DEBUG Picker] Cocok?', data.docs && data.docs[0] && data.docs[0].id === GOOGLE_DRIVE_FOLDER_ID);
           try { localStorage.setItem('driveFolderAccessGranted_v1', '1'); } catch (e) {}
           resolve(true);
         } else if (data.action === google.picker.Action.CANCEL) {
