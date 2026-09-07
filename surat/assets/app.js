@@ -5078,6 +5078,14 @@ async function sendPdfToDrive(eventOrId, maybeId) {
   const originalText = setButtonBusy(btn, 'Menghubungkan...');
 
   try {
+    // Minta token Google DULUAN, sebelum request Supabase apa pun (loadProfile/
+    // fetchDocuments). Popup Google hanya diizinkan browser kalau dipicu langsung
+    // dari event klik user tanpa "await" di depannya - kalau ada request async lain
+    // (network) sebelum ini, browser menganggap gesture klik sudah kadaluwarsa dan
+    // memblokir popupnya (itu penyebab error "Failed to open popup window").
+    const accessToken = await requestGoogleAccessToken();
+
+    if (btn) btn.textContent = 'Menyiapkan data...';
     await loadProfile();
     const row = findDocumentById(id) || (await fetchDocuments()).find((item) => String(item.id) === String(id));
     if (!row) {
@@ -5085,7 +5093,6 @@ async function sendPdfToDrive(eventOrId, maybeId) {
       return;
     }
 
-    const accessToken = await requestGoogleAccessToken();
     if (btn) btn.textContent = 'Membuat PDF...';
     const built = await createPdfFromDocument(row, { download: false, upload: false });
     if (!built) {
@@ -5120,18 +5127,29 @@ async function sendAllPdfToDrive() {
   const btn = el('sendAllPdfDriveBtn');
   const originalLabel = btn ? btn.textContent : '';
 
-  await loadProfile();
-  const rows = await fetchDocuments();
-  if (!rows.length) return showToast('Belum ada data surat untuk dikirim.', 'error');
-
-  if (!confirm(`Kirim PDF dari ${rows.length} surat ke Google Drive? Proses ini bisa memakan waktu beberapa menit.`)) return;
-
+  // Minta token Google DULUAN, sebelum request Supabase apa pun (loadProfile/
+  // fetchDocuments). Popup Google hanya diizinkan browser kalau dipicu langsung
+  // dari event klik user tanpa "await" di depannya - lihat catatan yang sama di
+  // sendPdfToDrive() di atas.
   if (btn) { btn.disabled = true; btn.textContent = 'Menghubungkan ke Google...'; }
   let accessToken;
   try {
     accessToken = await requestGoogleAccessToken();
   } catch (err) {
     if (err.message !== 'token-client-tidak-siap') showToast('Login Google gagal: ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+    return;
+  }
+
+  if (btn) btn.textContent = 'Menyiapkan data...';
+  await loadProfile();
+  const rows = await fetchDocuments();
+  if (!rows.length) {
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+    return showToast('Belum ada data surat untuk dikirim.', 'error');
+  }
+
+  if (!confirm(`Kirim PDF dari ${rows.length} surat ke Google Drive? Proses ini bisa memakan waktu beberapa menit.`)) {
     if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
     return;
   }
