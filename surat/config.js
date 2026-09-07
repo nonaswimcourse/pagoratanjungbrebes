@@ -27,3 +27,9 @@ const GOOGLE_DRIVE_FOLDER_ID = "1CGiZ3PFixRXaGkB0c9LUngwXpGZh0GMs";
 // 5. Batasi "API restrictions" > pilih hanya "Google Picker API".
 // 6. Tempel key hasilnya menggantikan placeholder di bawah.
 const GOOGLE_API_KEY = "AIzaSyBSSPG92KjjS1X8BCc2vfEIwvpV8SvorJI";
+
+// GOOGLE_PICKER_START_FOLDER_ID: folder tempat Google Picker mulai menampilkan
+// isinya saat dibuka, supaya user tidak melihat seluruh My Drive melainkan
+// langsung folder "RUANG GURU" -> "ARSIP SURAT" -> folder bulan (SEPTEMBER, dll).
+// Diambil dari URL: https://drive.google.com/drive/folders/<ID_INI>
+const GOOGLE_PICKER_START_FOLDER_ID = "1D47NDKpZNOFe-cxL3Fzv2uaBYsJVx2iV";
