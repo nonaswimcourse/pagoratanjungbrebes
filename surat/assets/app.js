@@ -5069,6 +5069,91 @@ async function uploadBlobToDrive(blob, fileName, mimeType, accessToken) {
   return res.json();
 }
 
+// ============ AKSES KE FOLDER DRIVE BERSAMA (Google Picker) ============
+// GOOGLE_DRIVE_FOLDER_ID di config.js menunjuk ke folder yang dibuat manual di
+// Drive (bukan dibuat oleh aplikasi ini). Karena scope OAuth yang dipakai adalah
+// "drive.file" (sengaja, supaya TIDAK perlu verifikasi berbayar dari Google),
+// setiap akun Google baru WAJIB "membuka" folder itu sendiri lewat dialog Google
+// Picker resmi minimal sekali - baru setelah itu Google mengizinkan akun tsb
+// mengunggah ke folder itu lewat API. Tanpa langkah ini upload akan selalu gagal
+// dengan error "insufficientParentPermissions", walau akun tsb adalah member folder.
+let googlePickerApiLoaded = false;
+
+function loadGooglePickerApi() {
+  return new Promise((resolve, reject) => {
+    if (googlePickerApiLoaded) return resolve();
+    if (typeof gapi === 'undefined') {
+      return reject(new Error('Library Google API belum dimuat. Muat ulang halaman lalu coba lagi.'));
+    }
+    gapi.load('picker', {
+      callback: () => { googlePickerApiLoaded = true; resolve(); },
+      onerror: () => reject(new Error('Gagal memuat Google Picker.'))
+    });
+  });
+}
+
+// Membuka dialog Picker langsung di dalam folder bersama, lalu minta pengguna
+// memilih (klik) folder itu sendiri. Tindakan memilih inilah yang memberi akses
+// drive.file ke folder tsb untuk akun yang sedang login.
+function openDriveFolderPicker(accessToken) {
+  return new Promise((resolve, reject) => {
+    if (typeof GOOGLE_API_KEY === 'undefined' || !GOOGLE_API_KEY || GOOGLE_API_KEY.includes('ISI_DENGAN')) {
+      return reject(new Error('GOOGLE_API_KEY di config.js belum diisi. Lihat komentar di config.js untuk cara membuatnya.'));
+    }
+    const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+      .setParent(GOOGLE_DRIVE_FOLDER_ID)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(true)
+      .setMimeTypes('application/vnd.google-apps.folder');
+
+    const picker = new google.picker.PickerBuilder()
+      .setOAuthToken(accessToken)
+      .setDeveloperKey(GOOGLE_API_KEY)
+      .addView(view)
+      .setTitle('Pilih folder ini untuk mengaktifkan akses upload')
+      .setCallback((data) => {
+        if (data.action === google.picker.Action.PICKED) {
+          try { localStorage.setItem('driveFolderAccessGranted_v1', '1'); } catch (e) {}
+          resolve(true);
+        } else if (data.action === google.picker.Action.CANCEL) {
+          reject(new Error('Pemilihan folder dibatalkan. Klik tombol kirim sekali lagi untuk mengulang.'));
+        }
+      })
+      .build();
+    picker.setVisible(true);
+  });
+}
+
+// Memastikan akses ke folder bersama sudah diberikan untuk akun yang sedang
+// login di perangkat ini, sebelum benar-benar mengunggah PDF.
+async function ensureDriveFolderAccess(accessToken) {
+  let already = false;
+  try { already = localStorage.getItem('driveFolderAccessGranted_v1') === '1'; } catch (e) {}
+  if (already) return;
+  await loadGooglePickerApi();
+  showToast('Pilih folder tujuan di jendela Google yang muncul untuk mengaktifkan akses (cukup sekali).', 'info');
+  await openDriveFolderPicker(accessToken);
+}
+
+// Wrapper: pastikan akses folder ada dulu, baru upload. Kalau ternyata masih
+// gagal insufficientParentPermissions (mis. akses picker sebelumnya kedaluwarsa
+// atau token beda akun), paksa ulang alur Picker sekali lalu coba upload lagi.
+async function uploadPdfToSharedFolder(blob, fileName, accessToken) {
+  try {
+    await ensureDriveFolderAccess(accessToken);
+    return await uploadBlobToDrive(blob, fileName, 'application/pdf', accessToken);
+  } catch (err) {
+    const msg = String((err && err.message) || '');
+    if (msg.includes('insufficientParentPermissions')) {
+      try { localStorage.removeItem('driveFolderAccessGranted_v1'); } catch (e) {}
+      await loadGooglePickerApi();
+      await openDriveFolderPicker(accessToken);
+      return await uploadBlobToDrive(blob, fileName, 'application/pdf', accessToken);
+    }
+    throw err;
+  }
+}
+
 // Kirim PDF satu surat tertentu (tombol "☁️ Drive" di baris tabel) ke Google Drive.
 // PDF dibangun ulang dari data surat (sama seperti tombol PDF), lalu langsung
 // diunggah ke Drive tanpa diunduh ke perangkat.
@@ -5101,7 +5186,7 @@ async function sendPdfToDrive(eventOrId, maybeId) {
     }
 
     if (btn) btn.textContent = 'Mengunggah...';
-    const result = await uploadBlobToDrive(built.pdfBlob, built.fileName, 'application/pdf', accessToken);
+    const result = await uploadPdfToSharedFolder(built.pdfBlob, built.fileName, accessToken);
     const link = result && result.webViewLink ? ` Buka file: ${result.webViewLink}` : '';
     showToast(`Berhasil dikirim ke Google Drive sebagai "${built.fileName}".${link}`, 'success');
   } catch (err) {
@@ -5162,7 +5247,7 @@ async function sendAllPdfToDrive() {
     try {
       const built = await createPdfFromDocument(row, { download: false, upload: false });
       if (!built) throw new Error('PDF gagal dibuat');
-      await uploadBlobToDrive(built.pdfBlob, built.fileName, 'application/pdf', accessToken);
+      await uploadPdfToSharedFolder(built.pdfBlob, built.fileName, accessToken);
       success++;
     } catch (err) {
       console.error(`Gagal mengirim PDF surat "${row.nomor_surat || row.id}":`, err);
