@@ -180,8 +180,6 @@ function renderPage(item, others) {
 <meta property="og:title" content="${escapeHtml(item.title)}">
 <meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:image" content="${escapeHtml(ogImage)}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
 <meta property="og:url" content="${canonical}">
 <meta property="og:locale" content="id_ID">
 <meta name="twitter:card" content="summary_large_image">
