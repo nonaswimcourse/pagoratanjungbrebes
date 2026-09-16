@@ -466,6 +466,9 @@ function subscribeRealtimeSettings() {
         { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.rekap" },
         (payload) => { if (payload.new && payload.new.nilai) applyRemoteRekapSettings(payload.new.nilai); })
       .on("postgres_changes",
+        { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.rekap_kegiatan" },
+        (payload) => { if (payload.new && payload.new.nilai) applyRemoteKegiatanMap(payload.new.nilai); })
+      .on("postgres_changes",
         { event: "*", schema: "public", table: "pengaturan", filter: "kunci=eq.aplikasi" },
         (payload) => { if (payload.new && payload.new.nilai) applyRemoteAppIdentity(payload.new.nilai); })
       .subscribe();
@@ -478,13 +481,15 @@ function subscribeRealtimeSettings() {
 // Dipanggil sekali tiap kali login berhasil: tarik versi TERBARU dari server (siapa tahu
 // tadi diubah dari perangkat lain saat kita offline/belum login), lalu pasang realtime.
 async function loadRemoteSettingsAndSubscribe() {
-  const [remoteCard, remoteRekap, remoteIdentity] = await Promise.all([
+  const [remoteCard, remoteRekap, remoteIdentity, remoteKegiatan] = await Promise.all([
     fetchPengaturanRemote("kartu_id"),
     fetchPengaturanRemote("rekap"),
     fetchPengaturanRemote("aplikasi"),
+    fetchPengaturanRemote("rekap_kegiatan"),
   ]);
   if (remoteCard) applyRemoteCardSettings(remoteCard, { rebuildEditor: false });
   if (remoteRekap) applyRemoteRekapSettings(remoteRekap);
+  if (remoteKegiatan) applyRemoteKegiatanMap(remoteKegiatan);
   if (remoteIdentity) applyRemoteAppIdentity(remoteIdentity);
   subscribeRealtimeSettings();
 }
@@ -807,6 +812,98 @@ $("rekapSettingsSave").addEventListener("click", async () => {
     : "Pengaturan rekap tersimpan di perangkat ini saja — gagal sinkron ke server (cek koneksi internet), jadi belum ikut berubah di perangkat lain.");
 });
 
+
+// ============ JUDUL KEGIATAN PER AGENDA (muncul di PDF Rekap) ============
+// Judul daftar hadir di Pengaturan Rekap sifatnya tetap (mis. "DAFTAR HADIR KKG PJOK SD").
+// Nah, tiap agenda biasanya beda kegiatannya — misalnya "Kegiatan Latihan Voli Persiapan
+// Haornas". Jadi judul kegiatan disimpan TERPISAH per tanggal yang dipilih di dropdown
+// "Agenda / Tanggal", biar ganti tanggal = judulnya ikut ganti sendiri, tidak perlu
+// diketik ulang tiap mau cetak. Ikut tersinkron ke semua perangkat lewat tabel "pengaturan".
+
+const REKAP_KEGIATAN_KEY = "absensiRekapKegiatan";
+
+function loadKegiatanMap() {
+  try {
+    const raw = localStorage.getItem(REKAP_KEGIATAN_KEY);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  } catch { return {}; }
+}
+
+function saveKegiatanMapToStorage(map) {
+  localStorage.setItem(REKAP_KEGIATAN_KEY, JSON.stringify(map));
+}
+
+let kegiatanMap = loadKegiatanMap();
+
+// Kunci penyimpanan = tanggal yang sedang dipilih ("semua" atau "2026-09-16").
+function kegiatanKeyAktif() {
+  const el = $("rekapDateFilter");
+  return (el && el.value) || "semua";
+}
+
+function getKegiatanAktif() {
+  return (kegiatanMap[kegiatanKeyAktif()] || "").trim();
+}
+
+// Perbarui tampilan (preview di bawah dropdown + isi kotak edit) sesuai tanggal terpilih.
+function renderKegiatanUI() {
+  const judul = getKegiatanAktif();
+  const preview = $("kegiatanPreview");
+  if (preview) {
+    preview.innerHTML = judul
+      ? `Judul kegiatan di PDF: <b>${esc(judul)}</b>`
+      : `Judul kegiatan di PDF: <i>belum diisi</i> — klik "Edit Judul Kegiatan" untuk menambahkan.`;
+  }
+  const input = $("rekapKegiatanInput");
+  if (input) input.value = judul;
+}
+
+$("editKegiatanBtn").addEventListener("click", () => {
+  const box = $("kegiatanBox");
+  box.hidden = !box.hidden;
+  if (!box.hidden) {
+    renderKegiatanUI();
+    $("rekapKegiatanInput").focus();
+  }
+});
+
+$("rekapKegiatanClose").addEventListener("click", () => { $("kegiatanBox").hidden = true; });
+
+async function simpanKegiatan(nilaiBaru) {
+  const key = kegiatanKeyAktif();
+  const judul = (nilaiBaru || "").trim();
+  if (judul) kegiatanMap[key] = judul;
+  else delete kegiatanMap[key];
+
+  saveKegiatanMapToStorage(kegiatanMap); // cache lokal, tetap ada walau offline
+  renderKegiatanUI();
+
+  const btn = $("rekapKegiatanSave");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Menyimpan...";
+  const ok = await savePengaturanRemote("rekap_kegiatan", kegiatanMap);
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+
+  alert(ok
+    ? "Judul kegiatan disimpan & langsung tersinkron ke semua perangkat."
+    : "Judul kegiatan tersimpan di perangkat ini saja — gagal sinkron ke server (cek koneksi internet).");
+}
+
+$("rekapKegiatanSave").addEventListener("click", () => simpanKegiatan($("rekapKegiatanInput").value));
+$("rekapKegiatanClear").addEventListener("click", () => {
+  if (!confirm("Kosongkan judul kegiatan untuk agenda ini?")) return;
+  $("rekapKegiatanInput").value = "";
+  simpanKegiatan("");
+});
+
+// Dipakai saat data judul kegiatan datang dari server (fetch awal / realtime dari perangkat lain).
+function applyRemoteKegiatanMap(nilai) {
+  kegiatanMap = nilai || {};
+  saveKegiatanMapToStorage(kegiatanMap);
+  renderKegiatanUI();
+}
 
 // ============ FOTO PESERTA (dikompres jadi JPEG kecil, disimpan sebagai base64) ============
 
@@ -1586,6 +1683,10 @@ function applyAttendanceFilter() {
       </tr>`).join("");
   }
   $("stats").innerHTML = `<div><b>${attendanceFiltered.length}</b><span>Total scan${selected !== "semua" ? " (tanggal ini)" : ""}</span></div>`;
+
+  // Judul kegiatan disimpan per tanggal, jadi tiap ganti pilihan agenda
+  // preview & kotak editnya ikut menyesuaikan.
+  renderKegiatanUI();
 }
 
 $("rekapDateFilter").addEventListener("change", applyAttendanceFilter);
@@ -1796,6 +1897,21 @@ function buildRekapPdfDoc() {
     doc.setFontSize(13);
     doc.text((rekapSettings.judul || defaultRekapSettings.judul).toUpperCase(), pageW / 2, y, { align: "center" });
     y += 5.5;
+
+    // Judul kegiatan khusus agenda ini (mis. "KEGIATAN LATIHAN VOLI PERSIAPAN HAORNAS").
+    // Diisi lewat tombol "Edit Judul Kegiatan" di halaman Rekap. Kalau dikosongkan,
+    // baris ini tidak dicetak sama sekali supaya tampilan PDF tetap rapat seperti semula.
+    const judulKegiatan = getKegiatanAktif();
+    if (judulKegiatan) {
+      doc.setFontSize(12);
+      // Judul panjang otomatis dipecah jadi beberapa baris biar tidak keluar dari kertas.
+      const barisKegiatan = doc.splitTextToSize(judulKegiatan.toUpperCase(), pageW - 40);
+      barisKegiatan.forEach(baris => {
+        doc.text(baris, pageW / 2, y, { align: "center" });
+        y += 5.5;
+      });
+    }
+
     doc.setFontSize(11);
     doc.text(`KECAMATAN ${(rekapSettings.kecamatan || "-").toUpperCase()} ${agendaLabel}`, pageW / 2, y, { align: "center" });
     y += 8;
@@ -1889,7 +2005,11 @@ function buildRekapPdfDoc() {
       }
     }
 
-    return { doc, fileTag, fileName: `Rekap_Kehadiran_${fileTag}.pdf` };
+    // Nama file ikut menyebut kegiatannya supaya arsip di HP/Drive gampang dibedakan.
+    const slugKegiatan = judulKegiatan
+      ? "_" + judulKegiatan.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 60)
+      : "";
+    return { doc, fileTag, fileName: `Rekap_Kehadiran${slugKegiatan}_${fileTag}.pdf` };
   } catch (err) {
     console.error("Gagal membuat PDF:", err);
     alert("Gagal membuat PDF: " + err.message);

@@ -217,6 +217,17 @@
         <div class="row" style="margin-top:6px">
           <label class="field-label" style="margin:0">Agenda / Tanggal:</label>
           <select id="rekapDateFilter" style="max-width:260px;margin:0"></select>
+          <button type="button" class="secondary" id="editKegiatanBtn">✏️ Edit Judul Kegiatan</button>
+        </div>
+        <p class="muted" id="kegiatanPreview" style="margin:6px 0 0"></p>
+        <div id="kegiatanBox" class="import-box" hidden>
+          <p class="muted">Judul kegiatan ini muncul di PDF, tepat di bawah judul daftar hadir. Disimpan per tanggal terpilih, jadi tiap agenda bisa punya judul sendiri (mis. <b>Kegiatan Latihan Voli Persiapan Haornas</b>).</p>
+          <input id="rekapKegiatanInput" placeholder="mis. Kegiatan Latihan Voli Persiapan Haornas">
+          <div class="row-actions" style="margin-top:8px">
+            <button type="button" class="primary" id="rekapKegiatanSave">Simpan Judul</button>
+            <button type="button" class="secondary" id="rekapKegiatanClear">Kosongkan</button>
+            <button type="button" class="secondary" id="rekapKegiatanClose">Tutup</button>
+          </div>
         </div>
         <div id="stats" class="stats"></div>
         <div class="table-wrap">
