@@ -43,11 +43,15 @@ let db = null;
 let configError = "";
 let GOOGLE_CLIENT_ID = "";
 let GOOGLE_DRIVE_FOLDER_ID = "";
+let ADMIN_EMAILS = [];
+let ADMIN_SECRET_CODE = "";
 try {
   const cfg = await import("./config.js");
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = cfg;
   GOOGLE_CLIENT_ID = cfg.GOOGLE_CLIENT_ID || "";
   GOOGLE_DRIVE_FOLDER_ID = cfg.GOOGLE_DRIVE_FOLDER_ID || "";
+  ADMIN_EMAILS = (cfg.ADMIN_EMAILS || []).map(e => String(e).trim().toLowerCase()).filter(Boolean);
+  ADMIN_SECRET_CODE = cfg.ADMIN_SECRET_CODE || "";
   if (!SUPABASE_URL || SUPABASE_URL.includes("PROJECT-ID") ||
       !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("ISI_ANON")) {
     configError = "config.js belum diisi dengan URL & anon key Supabase yang asli.";
@@ -75,6 +79,7 @@ const authMsg = $("authMsg");
 const loginBtn = $("loginBtn");
 const authEmailInput = $("authEmail");
 const authPasswordInput = $("authPassword");
+const authAdminCodeInput = $("authAdminCode");
 const authUserEmail = $("profileUserEmail");
 const logoutBtn = $("logoutBtn");
 const profileBtn = $("profileBtn");
@@ -257,9 +262,28 @@ function showAuthMsg(text, type = "bad") {
   authMsg.className = "result " + type;
 }
 
+// Hanya email yang ada di ADMIN_EMAILS (config.js) yang boleh masuk halaman ini.
+// Kalau daftarnya kosong (belum diisi admin), tidak ada satpam sama sekali —
+// jadi ADMIN_EMAILS WAJIB diisi supaya akun peserta tidak bisa masuk ke sini.
+function isAdminEmail(email) {
+  if (!ADMIN_EMAILS.length) return false;
+  return ADMIN_EMAILS.includes(String(email || "").trim().toLowerCase());
+}
+
 let currentSession = null;
 
 function applyAuthUI(session) {
+  // Tolak akun yang bukan admin walau kata sandinya benar & sesi valid (mis. akun
+  // peserta yang sesinya kebawa dari user.html karena satu domain yang sama).
+  if (session && session.user && !isAdminEmail(session.user.email)) {
+    currentSession = null;
+    authScreen.hidden = false;
+    mainApp.hidden = true;
+    closeProfileMenu();
+    showAuthMsg("Akun ini tidak memiliki akses Admin. Gunakan halaman Absen Mandiri (user.html) untuk absen.", "bad");
+    db.auth.signOut();
+    return;
+  }
   currentSession = session;
   if (session && session.user) {
     authScreen.hidden = true;
@@ -296,13 +320,26 @@ if (configError) {
     e.preventDefault();
     const email = authEmailInput.value.trim();
     const password = authPasswordInput.value;
+    const adminCode = authAdminCodeInput.value;
     authMsg.hidden = true;
+    // Kode rahasia admin dicek DULU, sebelum mencoba email/password ke server sama
+    // sekali — supaya kalau kodenya salah, tidak ada percobaan login yang terkirim.
+    if (!ADMIN_SECRET_CODE || ADMIN_SECRET_CODE.includes("isi-dengan-kode")) {
+      showAuthMsg("ADMIN_SECRET_CODE belum diisi di config.js. Isi dulu sebelum bisa login.", "bad");
+      return;
+    }
+    if (adminCode !== ADMIN_SECRET_CODE) {
+      showAuthMsg("Kode Rahasia Admin salah.", "bad");
+      authAdminCodeInput.value = "";
+      return;
+    }
     loginBtn.disabled = true;
     loginBtn.textContent = "Memproses...";
     try {
       const { error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
       authPasswordInput.value = "";
+      authAdminCodeInput.value = "";
     } catch (err) {
       showAuthMsg("Gagal masuk: " + err.message, "bad");
     } finally {
