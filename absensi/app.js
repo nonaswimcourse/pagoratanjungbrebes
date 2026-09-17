@@ -2178,11 +2178,11 @@ if (configError) {
   $("result").className = "result warn";
 }
 
-// ============ BAGIKAN HALAMAN ABSEN MANDIRI (absen.html) ============
-// Halaman absen.html sengaja dipisah: isinya HANYA kamera scan + login, tanpa menu
+// ============ BAGIKAN HALAMAN ABSEN MANDIRI (user.html) ============
+// Halaman user.html sengaja dipisah: isinya HANYA kamera scan + login, tanpa menu
 // Peserta/Rekap/Pengaturan. Jadi aman dibagikan ke peserta supaya mereka bisa scan
 // kartunya sendiri, sementara data & pengaturan tetap hanya bisa diakses admin di sini.
-const SHARE_SCAN_URL = new URL("absen.html", window.location.href).href;
+const SHARE_SCAN_URL = new URL("user.html", window.location.href).href;
 
 $("toggleShareScan").addEventListener("click", () => {
   const box = $("shareScanBox");
