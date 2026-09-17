@@ -2177,3 +2177,44 @@ if (configError) {
   $("result").textContent = configError;
   $("result").className = "result warn";
 }
+
+// ============ BAGIKAN HALAMAN ABSEN MANDIRI (absen.html) ============
+// Halaman absen.html sengaja dipisah: isinya HANYA kamera scan + login, tanpa menu
+// Peserta/Rekap/Pengaturan. Jadi aman dibagikan ke peserta supaya mereka bisa scan
+// kartunya sendiri, sementara data & pengaturan tetap hanya bisa diakses admin di sini.
+const SHARE_SCAN_URL = new URL("absen.html", window.location.href).href;
+
+$("toggleShareScan").addEventListener("click", () => {
+  const box = $("shareScanBox");
+  box.hidden = !box.hidden;
+  $("shareScanChevron").textContent = box.hidden ? "Buka ▾" : "Tutup ▴";
+  $("shareScanUrl").value = SHARE_SCAN_URL;
+});
+
+$("shareScanCopy").addEventListener("click", async () => {
+  const msg = $("shareScanMsg");
+  try {
+    await navigator.clipboard.writeText(SHARE_SCAN_URL);
+    msg.textContent = "✅ Alamat disalin. Tinggal tempel di WhatsApp/grup peserta.";
+  } catch {
+    // Sebagian browser lama / halaman non-HTTPS memblokir clipboard API.
+    $("shareScanUrl").select();
+    msg.textContent = "Alamat sudah disorot — tekan Ctrl+C (atau tahan lalu pilih Salin).";
+  }
+});
+
+$("shareScanOpen").addEventListener("click", () => {
+  window.open(SHARE_SCAN_URL, "_blank");
+});
+
+$("shareScanQr").addEventListener("click", () => {
+  const box = $("shareScanQrBox");
+  if (!box.hidden) { box.hidden = true; return; }
+  try {
+    drawQr(box, SHARE_SCAN_URL, 200);
+    box.hidden = false;
+    $("shareScanMsg").textContent = "Peserta bisa memindai QR ini untuk membuka halaman absen mandiri.";
+  } catch (err) {
+    $("shareScanMsg").textContent = "Gagal membuat QR: " + err.message;
+  }
+});

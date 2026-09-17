@@ -99,6 +99,24 @@
         <button id="startScan" class="primary">Mulai Kamera</button>
         <button id="stopScan" class="secondary">Matikan Kamera</button>
       </div>
+
+      <div class="card">
+        <div class="row toggle-row" id="toggleShareScan">
+          <h2>Bagikan Halaman Absen Mandiri</h2>
+          <button type="button" class="secondary" id="shareScanChevron">Buka ▾</button>
+        </div>
+        <div id="shareScanBox" class="import-box" hidden>
+          <p class="muted">Bagikan alamat di bawah ini ke peserta. Halaman itu <b>hanya berisi kamera scan</b> — tanpa menu Peserta, Rekap, maupun pengaturan. Peserta harus masuk dulu memakai akun &amp; kata sandi yang Anda buatkan.</p>
+          <input id="shareScanUrl" readonly>
+          <div class="row-actions" style="margin-top:8px">
+            <button type="button" class="primary" id="shareScanCopy">📋 Salin Alamat</button>
+            <button type="button" class="secondary" id="shareScanOpen">↗ Buka Halaman</button>
+            <button type="button" class="secondary" id="shareScanQr">⬛ Tampilkan QR</button>
+          </div>
+          <div id="shareScanQrBox" style="margin-top:12px;display:flex;justify-content:center" hidden></div>
+          <div id="shareScanMsg" class="muted" style="margin-top:8px"></div>
+        </div>
+      </div>
     </section>
 
     <section id="peserta" class="page">
