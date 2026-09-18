@@ -14,7 +14,7 @@ export const SUPABASE_ANON_KEY = "sb_publishable_phZErDKE6oDEDN5whvlk3Q_8LpXylcG
 // Tulis email persis sama seperti saat akun itu dibuat di Supabase (huruf besar/kecil
 // tidak masalah, otomatis disamakan). Boleh lebih dari satu, pisahkan dengan koma.
 export const ADMIN_EMAILS = [
-  "pagoratanjungbrebes@gmail.com",
+  "isi-dengan-email-admin@gmail.com",
 ];
 
 // ============ KODE RAHASIA ADMIN (lapis keamanan tambahan) ============
@@ -24,7 +24,7 @@ export const ADMIN_EMAILS = [
 // bisa masuk tanpa tahu kode ini. TIDAK dipakai/tidak diminta di halaman
 // Absen Mandiri (user.html), jadi peserta tidak perlu tahu kode ini.
 // Ganti dengan kode buatan Anda sendiri (bebas, semakin unik semakin baik).
-export const ADMIN_SECRET_CODE = "Pagora007@";
+export const ADMIN_SECRET_CODE = "isi-dengan-kode-rahasia-anda";
 
 // ============ GOOGLE DRIVE (tombol "Kirim ke Google Drive" di Rekap Kehadiran) ============
 // GOOGLE_CLIENT_ID: OAuth 2.0 Client ID (tipe "Web application") dari Google Cloud Console.

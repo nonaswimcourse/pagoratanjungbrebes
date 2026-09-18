@@ -280,7 +280,7 @@ function applyAuthUI(session) {
     authScreen.hidden = false;
     mainApp.hidden = true;
     closeProfileMenu();
-    showAuthMsg("Akun ini tidak memiliki akses Admin. Gunakan halaman Absen Mandiri (user.html) untuk absen.", "bad");
+    showAuthMsg("Akun ini tidak memiliki akses Admin. Gunakan halaman Absen Mandiri (/absensi/user/) untuk absen.", "bad");
     db.auth.signOut();
     return;
   }
@@ -2219,7 +2219,7 @@ if (configError) {
 // Halaman user.html sengaja dipisah: isinya HANYA kamera scan + login, tanpa menu
 // Peserta/Rekap/Pengaturan. Jadi aman dibagikan ke peserta supaya mereka bisa scan
 // kartunya sendiri, sementara data & pengaturan tetap hanya bisa diakses admin di sini.
-const SHARE_SCAN_URL = new URL("user.html", window.location.href).href;
+const SHARE_SCAN_URL = new URL("user/", window.location.href).href;
 
 $("toggleShareScan").addEventListener("click", () => {
   const box = $("shareScanBox");
