@@ -27,6 +27,9 @@
       border-bottom:1px solid var(--border)}
     .riwayat li:last-child{border-bottom:none}
     .riwayat .jam{color:var(--muted);flex:none}
+    .upload-divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--muted);font-size:12px}
+    .upload-divider::before,.upload-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+    .upload-label{display:block;width:100%;text-align:center;box-sizing:border-box;cursor:pointer}
   </style>
 </head>
 <body>
@@ -73,6 +76,10 @@
     <div id="result" class="result">Menunggu scan...</div>
     <button id="startScan" class="primary">Mulai Kamera</button>
     <button id="stopScan" class="secondary">Matikan Kamera</button>
+
+    <div class="upload-divider"><span>atau</span></div>
+    <label for="qrFileInput" class="secondary upload-label" id="uploadLabel">Upload Gambar QR</label>
+    <input type="file" id="qrFileInput" accept="image/*" hidden>
   </div>
 
   <div class="card" id="riwayatCard" hidden>
@@ -230,6 +237,39 @@ async function stopScanner() {
 
 $("startScan").addEventListener("click", startScanner);
 $("stopScan").addEventListener("click", stopScanner);
+
+/* ============ UPLOAD GAMBAR QR (alternatif dari kamera) ============ */
+// Beberapa peserta HP-nya tidak bisa akses kamera langsung (izin diblokir,
+// tidak ada kamera, dsb), jadi disediakan opsi upload/pilih foto QR dari galeri.
+const qrFileInput = $("qrFileInput");
+const uploadLabel = $("uploadLabel");
+
+qrFileInput.addEventListener("change", async () => {
+  const file = qrFileInput.files && qrFileInput.files[0];
+  qrFileInput.value = ""; // supaya file yang sama bisa dipilih ulang
+  if (file) await scanFromFile(file);
+});
+
+async function scanFromFile(file) {
+  const wasScanning = scanning;
+  const originalLabel = uploadLabel.textContent;
+  uploadLabel.textContent = "Memproses...";
+  $("result").textContent = "Membaca QR dari gambar...";
+
+  if (wasScanning) await stopScanner();
+  if (!scanner) scanner = new Html5Qrcode("reader");
+
+  try {
+    const decodedText = await scanner.scanFile(file, false);
+    await handleScan(decodedText);
+  } catch (err) {
+    showScanOverlay("bad", "GAGAL", "QR tidak terbaca dari gambar.");
+    showResult("QR tidak terbaca dari gambar. Pastikan foto jelas, tidak buram, dan QR terlihat utuh.", "bad");
+  } finally {
+    uploadLabel.textContent = originalLabel;
+    if (wasScanning) await startScanner();
+  }
+}
 
 /* ============ LOGIKA ABSEN (sama persis dengan aplikasi utama) ============ */
 
