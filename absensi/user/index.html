@@ -250,25 +250,78 @@ qrFileInput.addEventListener("change", async () => {
   if (file) await scanFromFile(file);
 });
 
+// Mengubah ukuran gambar ke lebar maksimum tertentu (menjaga rasio), lalu
+// mengembalikannya sebagai File baru. Foto asli dari kamera HP modern bisa
+// sangat besar (3000px+), dan library QR sering gagal/lambat membaca file
+// sebesar itu, jadi kita coba beberapa ukuran lebih kecil secara bertahap.
+function resizeImageFile(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        // Sudah cukup kecil, tidak perlu di-resize ulang.
+        return resolve(file);
+      }
+      const scale = maxDim / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error("Gagal memproses gambar."));
+        resolve(new File([blob], file.name || "qr.png", { type: "image/png" }));
+      }, "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Gagal memuat gambar.")); };
+    img.src = url;
+  });
+}
+
 async function scanFromFile(file) {
   const wasScanning = scanning;
   const originalLabel = uploadLabel.textContent;
-  uploadLabel.textContent = "Memproses...";
   $("result").textContent = "Membaca QR dari gambar...";
 
   if (wasScanning) await stopScanner();
   if (!scanner) scanner = new Html5Qrcode("reader");
 
-  try {
-    const decodedText = await scanner.scanFile(file, false);
-    await handleScan(decodedText);
-  } catch (err) {
-    showScanOverlay("bad", "GAGAL", "QR tidak terbaca dari gambar.");
-    showResult("QR tidak terbaca dari gambar. Pastikan foto jelas, tidak buram, dan QR terlihat utuh.", "bad");
-  } finally {
-    uploadLabel.textContent = originalLabel;
-    if (wasScanning) await startScanner();
+  // Coba ukuran asli dulu, lalu beberapa ukuran lebih kecil kalau gagal.
+  // Ini menaikkan peluang berhasil untuk foto asli (bukan screenshot bersih)
+  // yang resolusinya besar atau ada elemen lain di sekitar QR.
+  const MAX_DIMS_TO_TRY = [null, 1000, 700, 450];
+  let decodedText = null;
+  let lastError = null;
+
+  for (const maxDim of MAX_DIMS_TO_TRY) {
+    try {
+      uploadLabel.textContent = maxDim ? `Mencoba ulang (${maxDim}px)...` : "Memproses...";
+      const candidate = maxDim ? await resizeImageFile(file, maxDim) : file;
+      decodedText = await scanner.scanFile(candidate, false);
+      break;
+    } catch (err) {
+      lastError = err;
+    }
   }
+
+  if (decodedText) {
+    await handleScan(decodedText);
+  } else {
+    showScanOverlay("bad", "GAGAL", "QR tidak terbaca dari gambar.");
+    showResult(
+      "QR tidak terbaca dari gambar. Coba: foto ulang lebih dekat dan fokus tajam ke QR-nya saja " +
+      "(tanpa banyak latar belakang), pastikan pencahayaan cukup dan tidak buram.",
+      "bad"
+    );
+    console.warn("scanFromFile gagal di semua ukuran:", lastError);
+  }
+
+  uploadLabel.textContent = originalLabel;
+  if (wasScanning) await startScanner();
 }
 
 /* ============ LOGIKA ABSEN (sama persis dengan aplikasi utama) ============ */
